@@ -14,7 +14,7 @@ const App: React.FC = () => {
             A new way of battling in Pokemon go will be here soon
           </p>
           <p className="text-4xl text-black mt-8 mb-8">
-            Subscribe to know more
+            Subscribe to know more information
           </p>
           <input type="email" placeholder="Enter your email" className="p-2" />
         </div>
