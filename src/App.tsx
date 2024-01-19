@@ -1,26 +1,23 @@
-import React from "react";
+import ContactForm from "./ContactForm";
 import bckImage from "./assets/sunflower-bg.jpg";
 
-const App: React.FC = () => {
+function App() {
   return (
-    <>
-      <div
-        className="bg-cover bg-center h-screen w-full"
-        style={{ backgroundImage: `url(${bckImage})` }}
-      >
-        <div className="flex flex-col items-center justify-center h-full">
-          <h1 className="text-8xl font-bold text-black mb-2">PvPogo</h1>
-          <p className="text-4xl text-black mt-8 mb-8">
-            A new way of battling in Pokemon go will be here soon
-          </p>
-          <p className="text-4xl text-black mt-8 mb-8">
-            Subscribe to know more information
-          </p>
-          <input type="email" placeholder="Enter your email" className="p-2" />
-        </div>
+    <div
+      className="h-screen bg-cover bg-no-repeat bg-center"
+      style={{ backgroundImage: `url(${bckImage})` }}
+    >
+      <div className="flex flex-col items-center justify-center h-full text-center bg-opacity-50 bg-gray-700 px-4">
+        <h1 className="text-6xl md:text-8xl lg:text-12xl font-bold text-teal-950 mb-4 my-6">
+          PvPogo
+        </h1>
+        <p className="text-lg font-bold text-teal-950 md:text-3xl mb-6 mx-4 my-12">
+          A new way to learn Pokemon PvP will be here soon. Get excited!
+        </p>
+        <ContactForm />
       </div>
-    </>
+    </div>
   );
-};
+}
 
 export default App;
