@@ -12,7 +12,7 @@ function App() {
           PvPogo
         </h1>
         <p className="text-lg font-bold text-teal-950 md:text-3xl mb-6 mx-4 my-12">
-          A new way to learn Pokemon PvP will be here soon. Get excited!
+          Unleash Your Pokémon Mastery: The Ultimate PvP Learning Adventure Awaits!"
         </p>
         <ContactForm />
       </div>
