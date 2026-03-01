@@ -3,6 +3,7 @@
 import { Button, Input, Card, CardBody, CardHeader } from "@heroui/react";
 import { useForm, ValidationError } from "@formspree/react";
 import { useState } from "react";
+import Link from "next/link";
 
 function ContactForm() {
   const [state, handleSubmit] = useForm("mayrngon");
@@ -13,7 +14,7 @@ function ContactForm() {
       <Card className="w-full max-w-md mt-6">
         <CardBody className="text-center py-8">
           <p className="text-lg font-semibold text-success">
-            You're all set! Welcome to the community. Check your inbox for
+            You&apos;re all set! Welcome to the community. Check your inbox for
             exciting updates and exclusive content coming your way!
           </p>
         </CardBody>
@@ -69,6 +70,13 @@ export default function Home() {
           Unleash Your Pokémon Mastery: The Ultimate PvP Learning Adventure
           Awaits!
         </p>
+        <div className="flex gap-4 mb-6">
+          <Link href="/team">
+            <Button size="lg" color="primary" className="font-bold">
+              Build Your Team
+            </Button>
+          </Link>
+        </div>
         <ContactForm />
       </div>
     </main>
