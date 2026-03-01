@@ -1,7 +1,7 @@
 # AGENTS.md - PvPogo Development Guide
 
 This repository contains two main components:
-- **Frontend**: React + TypeScript + Vite + Tailwind CSS
+- **Frontend**: React + TypeScript + Next.js (App Router) + HeroUI + Tailwind CSS
 - **Backend**: Python (pypogo) with Django
 
 ---
@@ -20,17 +20,11 @@ npm run dev
 # Build for production
 npm run build
 
-# Lint code (ESLint with TypeScript support)
+# Start production server
+npm run start
+
+# Lint code (ESLint with Next.js)
 npm run lint
-
-# Preview production build
-npm run preview
-
-# Run a single test file (use -- before passing args to vitest)
-npx vitest run src/App.test.tsx
-
-# Run tests in watch mode
-npx vitest
 ```
 
 ### Backend (Python - in pypogo directory)
@@ -61,17 +55,18 @@ pytest --cov=pypogo --cov-report=html
 
 ## Code Style Guidelines
 
-### TypeScript / React (Frontend)
+### TypeScript / React / Next.js (Frontend)
 
 **General:**
 - Use strict TypeScript (`strict: true` in tsconfig.json)
-- Enable `noUnusedLocals` and `noUnusedParameters`
+- Use Next.js App Router (`app/` directory)
 - Use functional components with arrow functions or `function` keyword
+- Add `"use client"` directive for client-side components
 - Component files should be PascalCase (e.g., `ContactForm.tsx`)
 
 **Imports:**
-- Use relative imports for local modules (`./Component`)
-- Use package imports for external libraries (`@formspree/react`)
+- Use `@/*` alias for local modules (`@/components/Component`)
+- Use package imports for external libraries (`@heroui/react`, `@formspree/react`)
 - Order: external imports, blank line, local imports
 
 **Formatting:**
@@ -79,6 +74,11 @@ pytest --cov=pypogo --cov-report=html
 - Max line length: 100 characters (soft limit)
 - Use double quotes for strings in JSX, single quotes elsewhere
 - Trailing commas in arrays and objects
+
+**HeroUI Components:**
+- Use HeroUI components instead of raw HTML elements
+- Examples: `<Button>`, `<Input>`, `<Card>`, `<Modal>`, etc.
+- Configure HeroUIProvider in `app/layout.tsx`
 
 **Types:**
 - Always define types for props, state, and function parameters
@@ -143,12 +143,13 @@ pytest --cov=pypogo --cov-report=html
 
 ```
 pvpogo/
-├── src/                    # React frontend source
-│   ├── App.tsx
-│   ├── ContactForm.tsx
-│   ├── main.tsx
-│   └── assets/
-├── pypogo/                 # Python backend
+├── app/                       # Next.js App Router
+│   ├── layout.tsx             # Root layout with HeroUIProvider
+│   ├── page.tsx               # Main page
+│   └── globals.css            # Global styles with Tailwind
+├── public/                    # Static assets
+│   └── sunflower-bg.jpg       # Background image
+├── pypogo/                    # Python backend
 │   ├── pypogo/
 │   │   ├── battle.py
 │   │   ├── pokemon.py
@@ -157,11 +158,13 @@ pvpogo/
 │   │   ├── ai/
 │   │   ├── game_master/
 │   │   └── tests/
-│   └── pokexperience/      # Django web app
+│   └── pokexperience/         # Django web app
 ├── package.json
 ├── tsconfig.json
-├── vite.config.ts
-└── tailwind.config.js
+├── tailwind.config.js
+├── postcss.config.js
+├── next.config.js
+└── AGENTS.md
 ```
 
 ---
@@ -169,10 +172,15 @@ pvpogo/
 ## Common Development Tasks
 
 ### Adding a new React component
-1. Create file in `src/` with PascalCase name
-2. Define props interface with TypeScript
-3. Export as default
-4. Import in parent component
+1. Create file in `app/components/` with PascalCase name
+2. Add `"use client"` directive if using hooks or HeroUI interactive components
+3. Define props interface with TypeScript
+4. Export as default
+5. Import in parent component using `@/components/Component` alias
+
+### Adding a new page
+1. Create file in `app/` with PascalCase name (e.g., `about/page.tsx`)
+2. Use Next.js file-based routing
 
 ### Adding a new Python module
 1. Create file in `pypogo/pypogo/`
@@ -193,7 +201,8 @@ cd pypogo && pytest
 
 ## Notes
 
-- Frontend uses Vite with React 18 and TypeScript
+- Frontend uses Next.js 14 with App Router and HeroUI component library
+- HeroUI provides theming, dark mode, and accessible components
 - Backend uses Python with pytest for testing
 - No pre-commit hooks currently configured
-- ESLint is configured with TypeScript and React plugins
+- ESLint is configured with Next.js support
