@@ -1,8 +1,8 @@
+import json
 from enum import Enum
 from functools import cached_property
 
 from .constants import BUFF_MULTIPLIER
-import json
 
 
 class BuffTarget(Enum):

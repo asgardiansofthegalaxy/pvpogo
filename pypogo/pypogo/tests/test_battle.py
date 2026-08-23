@@ -1,7 +1,8 @@
 from unittest import TestCase, mock
-from pypogo.battle import PvpBattle, BattlePhase, PvpAction
-from pypogo.moves import MoveKind
+
+from pypogo.battle import BattlePhase, PvpAction, PvpBattle
 from pypogo.player import Player
+
 from .utils import load_teams
 
 

@@ -1,5 +1,5 @@
-from typing import List
 import sys
+from typing import List
 
 from pypogo.ai.pvpoke.constants import RosterPerformance, Scenario, ScenarioType
 from pypogo.battle import OneVsOneBattle

@@ -1,9 +1,8 @@
 import pprint
 
-from pypogo.tests.utils import load_teams
-from pypogo.battle import PvpBattle, BattlePhase
+from pypogo.battle import BattlePhase, PvpBattle
 from pypogo.player import Player
-
+from pypogo.tests.utils import load_teams
 
 if __name__ == "__main__":
     print("Loading teams...")

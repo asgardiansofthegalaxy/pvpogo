@@ -1,8 +1,8 @@
 import json
-from dataclasses import dataclass
 import math
-from typing import List
+from dataclasses import dataclass
 from functools import cached_property, total_ordering
+from typing import List, Optional
 
 from .constants import CP_MULTIPLIER, MAX_IV, MAX_LEVEL
 
@@ -89,6 +89,11 @@ class StatsCombo:
         self.ivs = ivs or Stats()
 
     @cached_property
+    def cp(self) -> int:
+        """Combat power for this level/base/IV combination."""
+        return get_cp_from_stats(self.base, self.ivs, self.level)
+
+    @cached_property
     def effective(self) -> Stats:
         cp_multiplier = CP_MULTIPLIER[int((self.level - 1) * 2)]
         return Stats(
@@ -159,7 +164,6 @@ class StatsRanker:
                         if cp <= max_cp:
                             rankings.append(
                                 StatsCombo(
-                                    cp=cp,
                                     level=level,
                                     base=base,
                                     ivs=Stats(ivs.attack, ivs.defense, ivs.stamina),
@@ -170,7 +174,7 @@ class StatsRanker:
 
     @staticmethod
     def get_iv_rankings(
-        base: Stats, max_cp: int = None, limit: int = None
+        base: Stats, max_cp: Optional[int] = None, limit: Optional[int] = None
     ) -> List[StatsCombo]:
         """
         Ranks the IV combinations by effective stats output.

@@ -1,5 +1,7 @@
-from pypogo.ai.interface import AInterface, AIStatus
+from typing import Optional
+
 from pypogo.action import PvpAction
+from pypogo.ai.interface import AInterface, AIStatus
 
 
 class NaiveAI(AInterface):
@@ -10,7 +12,7 @@ class NaiveAI(AInterface):
     def select_team(
         self,
         previous_teams=None,
-        previous_result: str = None,
+        previous_result: Optional[str] = None,
         selection_strategy=None,
     ):
         return AIStatus.AI_ERROR_FAIL

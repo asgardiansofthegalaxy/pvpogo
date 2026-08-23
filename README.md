@@ -20,6 +20,26 @@ being rebuilt around agentic AI, machine learning, and a stronger UI/UX.
 The frontend and the Python engine are not yet connected — no shared API or
 schema. Wiring them together is open work.
 
+## Verification gate
+
+One command runs everything. This is what CI runs and what the Claude Code
+Stop hook enforces, so an agent cannot finish a turn with the tree red.
+
+```bash
+npm run verify        # fast: eslint, tsc, ruff, mypy, pytest (~15s)
+npm run verify:all    # the above plus a production build and Playwright E2E
+```
+
+First-time setup for the Python half:
+
+```bash
+python3 -m venv pypogo/.venv
+pypogo/.venv/bin/pip install -r pypogo/requirements-dev.txt -e pypogo
+```
+
+`scripts/verify.sh` falls back to whatever `python3` is on PATH when that venv
+is missing, which is how CI runs it.
+
 ## Frontend
 
 Requires Node 18+.
@@ -31,7 +51,12 @@ npm run build
 npm run start
 npm run lint       # ESLint CLI
 npm run lint:fix
+npm run typecheck  # tsc --noEmit
+npm run test:e2e   # Playwright (builds and serves the app itself)
 ```
+
+`npm install` needs the `legacy-peer-deps` setting in `.npmrc`; see the comment
+there.
 
 ## Python engine
 

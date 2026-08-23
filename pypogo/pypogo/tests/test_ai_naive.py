@@ -1,8 +1,8 @@
 from unittest import TestCase
-from pypogo.constants import BattlePhase
 
+from pypogo.ai.naive import AIStatus, NaiveAI, PvpAction
+from pypogo.constants import BattlePhase
 from pypogo.player import Player
-from pypogo.ai.naive import NaiveAI, AIStatus, PvpAction
 from pypogo.tests.utils import load_team
 
 
@@ -17,7 +17,6 @@ class NaiveAITests(TestCase):
         self.assertEqual(result, AIStatus.AI_ERROR_FAIL)
 
     def test_decide_action_valid_action(self):
-        player = None  # Replace with actual player object
         battle_phase = BattlePhase.NEUTRAL  # Replace with actual battle phase
         result, action = self.naive_ai.decide_action(battle_phase)
         self.assertEqual(result, AIStatus.AI_SUCCESS)

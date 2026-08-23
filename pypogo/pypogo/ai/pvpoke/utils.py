@@ -1,11 +1,7 @@
-from ast import List
 import random
+from typing import List
 
 from .constants import DecisionOption
-
-
-from typing import List
-import random
 
 
 def choose_option(options: List[DecisionOption]) -> DecisionOption:

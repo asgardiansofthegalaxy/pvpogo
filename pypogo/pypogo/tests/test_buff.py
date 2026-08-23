@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from pypogo.buff import BuffState, BuffLevel
+from pypogo.buff import BuffLevel, BuffState
 
 
 class BuffStateTests(TestCase):

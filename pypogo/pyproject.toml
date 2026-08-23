@@ -1,0 +1,48 @@
+# Tooling config for the pypogo backend.
+# Packaging still lives in setup.py; this file configures the verification gate.
+
+[tool.pytest.ini_options]
+testpaths = ["pypogo"]
+python_files = ["test_*.py"]
+# Fixtures and Game Master JSON are opened relative to this directory.
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = [".venv", "venv", "pokexperience/app/migrations"]
+
+[tool.ruff.lint]
+# Deliberately correctness-focused rather than a style crusade: pyflakes (F),
+# pycodestyle errors (E), import ordering (I), bugbear (B) and ruff's own
+# checks (RUF). Annotation modernisation (UP: List -> list) is left off for
+# now so the gate stays about behaviour; turn it on as a separate pass.
+select = ["E", "F", "I", "B", "RUF"]
+ignore = [
+    # Line length is a formatter's concern, not a linter's. Enable `ruff
+    # format` as a separate pass (it reflows the whole tree in one diff) and
+    # drop this ignore then.
+    "E501",
+    # Assigning a Stats()/Enum default in a signature. Flagged 3x in this
+    # codebase where the default is only read, never mutated. Worth revisiting
+    # if any of those defaults ever become mutable state.
+    "B008",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests intentionally build deep fixture structures and shadow names.
+"pypogo/tests/*" = ["B011"]
+"pypogo/ai/pvpoke/tests/*" = ["B011"]
+
+[tool.mypy]
+python_version = "3.10"
+files = ["pypogo"]
+exclude = "(^|/)(\\.venv|venv|pokexperience)/"
+# Starting lenient on purpose: this catches genuine type errors in annotated
+# code without demanding annotations everywhere first. Tighten incrementally
+# (disallow_untyped_defs, then strict) as modules get annotated.
+ignore_missing_imports = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+no_implicit_optional = true
+check_untyped_defs = false

@@ -1,4 +1,5 @@
 from unittest import TestCase
+
 from pypogo.ai.pvpoke.roster_analysis import RosterAnalyzer
 from pypogo.ai.pvpoke.team_generation import TeamGenerator
 from pypogo.ai.pvpoke.tests.fixtures import (

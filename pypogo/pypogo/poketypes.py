@@ -1,5 +1,5 @@
-from enum import Enum
 from dataclasses import dataclass
+from enum import Enum
 from typing import List
 
 from pypogo.damage_modifiers import DAMAGE_MODIFIERS
@@ -30,7 +30,7 @@ class PokeType(Enum):
     STEEL = "steel"
     WATER = "water"
 
-    def is_weak(self, poke_type: object):
+    def is_weak(self, poke_type: "PokeType"):
         """
         Check if this type is weak against the given Pokémon type.
 
@@ -42,7 +42,7 @@ class PokeType(Enum):
         """
         return poke_type in POKE_TYPE_TRAITS_DICT[self].weaknesses
 
-    def resists(self, poke_type: object):
+    def resists(self, poke_type: "PokeType"):
         """
         Check if this type resists the given Pokémon type.
 
@@ -54,7 +54,7 @@ class PokeType(Enum):
         """
         return poke_type in POKE_TYPE_TRAITS_DICT[self].resistances
 
-    def is_immunte(self, poke_type: object):
+    def is_immunte(self, poke_type: "PokeType"):
         """
         Check if this type is immune to the given Pokémon type.
 
@@ -77,7 +77,7 @@ class PokeType(Enum):
         return TYPE_INDEX_MAP[self.name]
 
     @staticmethod
-    def get_damage_modifier(def_types: List[object], atk_type: object):
+    def get_damage_modifier(def_types: List["PokeType"], atk_type: "PokeType"):
         """
         Get the damage modifier for the given attacking and defending types.
 
@@ -99,10 +99,11 @@ class PokeType(Enum):
                 return DAMAGE_MODIFIERS[type1.index - 1][0][atk_type.index - 1]
             else:
                 raise ValueError(f"Error: Received wrong number of types ({count})")
-        except IndexError:
+        except IndexError as err:
             raise ValueError(
-                f"Error: Received invalid type index ({type1.name}:{type1.index}, {type2.name}:{type2.index}, {atk_type.name}:{atk_type.index})"
-            )
+                f"Error: Received invalid type index ({type1.name}:{type1.index}, "
+                f"{type2.name}:{type2.index}, {atk_type.name}:{atk_type.index})"
+            ) from err
 
 
 @dataclass
@@ -118,11 +119,11 @@ TYPE_INDEX_MAP = {
 
 
 POKE_TYPE_TRAITS_DICT = {
-    PokeType.NONE: PokeTypeTraits(PokeType.NONE, PokeType.NONE, PokeType.NONE),
+    PokeType.NONE: PokeTypeTraits(set(), set(), set()),
     PokeType.BUG: PokeTypeTraits(
         {PokeType.FIGHTING, PokeType.GROUND, PokeType.GRASS},
         {PokeType.FLYING, PokeType.ROCK, PokeType.FIRE},
-        PokeType.NONE,
+        set(),
     ),
     PokeType.DARK: PokeTypeTraits(
         {PokeType.GHOST, PokeType.DARK},
@@ -132,12 +133,12 @@ POKE_TYPE_TRAITS_DICT = {
     PokeType.DRAGON: PokeTypeTraits(
         {PokeType.FIRE, PokeType.WATER, PokeType.GRASS, PokeType.ELECTRIC},
         {PokeType.DRAGON, PokeType.ICE, PokeType.FAIRY},
-        PokeType.NONE,
+        set(),
     ),
     PokeType.ELECTRIC: PokeTypeTraits(
         {PokeType.FLYING, PokeType.STEEL, PokeType.ELECTRIC},
         {PokeType.GROUND},
-        PokeType.NONE,
+        set(),
     ),
     PokeType.FAIRY: PokeTypeTraits(
         {PokeType.FIGHTING, PokeType.BUG, PokeType.DARK},
@@ -147,7 +148,7 @@ POKE_TYPE_TRAITS_DICT = {
     PokeType.FIGHTING: PokeTypeTraits(
         {PokeType.ROCK, PokeType.BUG, PokeType.DARK},
         {PokeType.FLYING, PokeType.PSYCHIC, PokeType.FAIRY},
-        PokeType.NONE,
+        set(),
     ),
     PokeType.FIRE: PokeTypeTraits(
         {
@@ -159,7 +160,7 @@ POKE_TYPE_TRAITS_DICT = {
             PokeType.FAIRY,
         },
         {PokeType.GROUND, PokeType.ROCK, PokeType.WATER},
-        PokeType.NONE,
+        set(),
     ),
     PokeType.FLYING: PokeTypeTraits(
         {PokeType.FIGHTING, PokeType.BUG, PokeType.GRASS},
@@ -174,7 +175,7 @@ POKE_TYPE_TRAITS_DICT = {
     PokeType.GRASS: PokeTypeTraits(
         {PokeType.GROUND, PokeType.WATER, PokeType.GRASS, PokeType.ELECTRIC},
         {PokeType.FLYING, PokeType.POISON, PokeType.BUG, PokeType.FIRE, PokeType.ICE},
-        PokeType.NONE,
+        set(),
     ),
     PokeType.GROUND: PokeTypeTraits(
         {PokeType.POISON, PokeType.ROCK},
@@ -184,10 +185,10 @@ POKE_TYPE_TRAITS_DICT = {
     PokeType.ICE: PokeTypeTraits(
         {PokeType.ICE},
         {PokeType.FIGHTING, PokeType.FIRE, PokeType.STEEL, PokeType.ROCK},
-        PokeType.NONE,
+        set(),
     ),
     PokeType.NORMAL: PokeTypeTraits(
-        PokeType.NONE, {PokeType.FIGHTING}, {PokeType.GHOST}
+        set(), {PokeType.FIGHTING}, {PokeType.GHOST}
     ),
     PokeType.POISON: PokeTypeTraits(
         {
@@ -198,12 +199,12 @@ POKE_TYPE_TRAITS_DICT = {
             PokeType.GRASS,
         },
         {PokeType.GROUND, PokeType.PSYCHIC},
-        PokeType.NONE,
+        set(),
     ),
     PokeType.PSYCHIC: PokeTypeTraits(
         {PokeType.FIGHTING, PokeType.PSYCHIC},
         {PokeType.BUG, PokeType.GHOST, PokeType.GHOST, PokeType.DARK},
-        PokeType.NONE,
+        set(),
     ),
     PokeType.ROCK: PokeTypeTraits(
         {PokeType.NORMAL, PokeType.FLYING, PokeType.POISON, PokeType.FIRE},
@@ -214,7 +215,7 @@ POKE_TYPE_TRAITS_DICT = {
             PokeType.WATER,
             PokeType.GRASS,
         },
-        PokeType.NONE,
+        set(),
     ),
     PokeType.STEEL: PokeTypeTraits(
         {
@@ -235,6 +236,6 @@ POKE_TYPE_TRAITS_DICT = {
     PokeType.WATER: PokeTypeTraits(
         {PokeType.STEEL, PokeType.FIRE, PokeType.WATER, PokeType.ICE},
         {PokeType.GRASS, PokeType.ELECTRIC},
-        PokeType.NONE,
+        set(),
     ),
 }

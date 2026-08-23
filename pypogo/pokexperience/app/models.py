@@ -1,6 +1,5 @@
-from django.db import models
 from django.core.validators import RegexValidator
-
+from django.db import models
 
 stats_validator = RegexValidator(
     regex=r'^\d+,\d+,\d+$',

@@ -3,10 +3,9 @@ import os
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from app.models import PokedexEntry, Move
 
 import pypogo
-
+from app.models import Move, PokedexEntry
 
 # Resolve the bundled Game Master exports off the installed pypogo package, so
 # the command works regardless of the directory it is invoked from.
@@ -33,7 +32,7 @@ class Command(BaseCommand):
             data = json.load(file)
             self.stdout.write(self.style.SUCCESS('Starting to load Pokémon data...'))
             with transaction.atomic():
-                for pokemon_name, poke_data in data.items():
+                for _pokemon_name, poke_data in data.items():
                     # Format the stats in the required 'attack,defense,stamina' format
                     formatted_stats = "{},{},{}".format(
                         poke_data['base_stats']['attack'],
@@ -80,7 +79,7 @@ class Command(BaseCommand):
             moves_data = json.load(file)
             self.stdout.write(self.style.SUCCESS('Starting to load Move data...'))
             with transaction.atomic():
-                for move_name, move_attrs in moves_data.items():
+                for _move_name, move_attrs in moves_data.items():
                     # buff is a nullable JSONField, so a null in the JSON is
                     # stored as-is rather than as a placeholder string.
                     buff = move_attrs['buff']

@@ -1,19 +1,18 @@
 import pprint
-import random
+from itertools import combinations
+from typing import Dict, List, Tuple
 
-from itertools import combinations, permutations
+from pypogo.battle import BattlePhase, PvpBattle
+from pypogo.player import Player
 from pypogo.pokemon import PvpPokemon
 from pypogo.tests.utils import load_simulation_pokemon
-from pypogo.battle import PvpBattle, BattlePhase
-from pypogo.player import Player
-from typing import List, Tuple, Dict
 
 if __name__ == "__main__":
     print("Loading teams...")
     pokemon = load_simulation_pokemon()
 
     # Generating all unique teams of 3 players each from the 6 players
-    all_pokemon_teams : List[Tuple[PvpPokemon]] = list(combinations(pokemon, 3))
+    all_pokemon_teams : List[Tuple[PvpPokemon, ...]] = list(combinations(pokemon, 3))
 
     all_players : Dict = {}
 
@@ -22,7 +21,7 @@ if __name__ == "__main__":
 
     player_records : Dict = {}
 
-    for index, player in all_players.items():
+    for _index, player in all_players.items():
         player_records[player.name] = {
             "pokemon": player.team,
             "matchups": 0,

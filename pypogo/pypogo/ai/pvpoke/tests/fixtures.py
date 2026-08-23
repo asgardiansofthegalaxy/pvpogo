@@ -1,12 +1,13 @@
-from typing import List
+from typing import Any, Dict, List
+
 from pypogo.game_master.game_master import GameMaster
-from pypogo.pokemon import Pokemon
+from pypogo.pokemon import PvpPokemon
 
 GM = GameMaster()
 
 
-def load_all_grass_team() -> List[Pokemon]:
-    grass_pokemon = [
+def load_all_grass_team() -> List[PvpPokemon]:
+    grass_pokemon: List[Dict[str, Any]] = [
         {
             "species_id": "snivy",
             "fast_move_id": "VINE_WHIP",
@@ -27,8 +28,8 @@ def load_all_grass_team() -> List[Pokemon]:
     return team
 
 
-def load_all_fire_team() -> List[Pokemon]:
-    fire_pokemon = [
+def load_all_fire_team() -> List[PvpPokemon]:
+    fire_pokemon: List[Dict[str, Any]] = [
         {
             "species_id": "charmander",
             "fast_move_id": "EMBER",
@@ -49,8 +50,8 @@ def load_all_fire_team() -> List[Pokemon]:
     return team
 
 
-def load_all_water_team() -> List[Pokemon]:
-    water_pokemon = [
+def load_all_water_team() -> List[PvpPokemon]:
+    water_pokemon: List[Dict[str, Any]] = [
         {
             "species_id": "squirtle",
             "fast_move_id": "BUBBLE",

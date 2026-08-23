@@ -1,17 +1,17 @@
+import random
+import time
+from typing import Optional
+
 from pypogo.pokemon import PvpPokemon
 
+from .action import PvpAction
 from .constants import (
     SWITCH_TIMEOUT_TURNS,
     SWITCH_TURNS,
     BattlePhase,
     CMPRule,
 )
-
-from .action import PvpAction
 from .player import Player
-
-import random
-import time
 
 
 class PvpBattle:
@@ -26,7 +26,7 @@ class PvpBattle:
         self._phase: BattlePhase = BattlePhase.COUNTDOWN
         self.cmp_rule: CMPRule = CMPRule.CMP_IDEAL
         self.cmp_alt_state: bool = False
-        self._history = [] if keep_history else None
+        self._history: Optional[list] = [] if keep_history else None
         self._keep_history = keep_history
 
         # Give each player a handle on its opponent and on this battle, so an

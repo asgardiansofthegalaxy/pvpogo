@@ -1,8 +1,8 @@
-import os
-from typing import List
 import json
-
+import os
 import re
+from typing import Dict, List, Optional
+
 from pypogo.buff import MoveBuff
 from pypogo.constants import MAX_IV, MAX_LEVEL
 from pypogo.moves import Move
@@ -46,8 +46,8 @@ class GameMaster:
     def get_pokemon(
         self,
         species_id: "str",
-        fast_move_id: str = None,
-        charged_move_ids: List[str] = None,
+        fast_move_id: Optional[str] = None,
+        charged_move_ids: Optional[List[str]] = None,
         level: float = MAX_LEVEL,
         ivs: Stats = Stats(MAX_IV, MAX_IV, MAX_IV),
     ) -> PvpPokemon:
@@ -90,7 +90,7 @@ class GameMaster:
 
     @staticmethod
     def _get_grouped_keys(gm_data: dict) -> dict:
-        grouped_keys = {pattern: [] for pattern in PATTERNS}
+        grouped_keys: Dict[str, list] = {pattern: [] for pattern in PATTERNS}
 
         def match_key(key):
             for pattern_name, pattern_regex in PATTERNS.items():
@@ -108,7 +108,7 @@ class GameMaster:
         return grouped_keys
 
     @staticmethod
-    def _load_moves(move_data: dict) -> List[Move]:
+    def _load_moves(move_data: dict) -> Dict[str, Move]:
         moves = {}
 
         for item in move_data:
@@ -165,7 +165,7 @@ class GameMaster:
         return moves
 
     @staticmethod
-    def _load_pokedex_pokemon(pokemon_data: dict) -> List[PokedexEntry]:
+    def _load_pokedex_pokemon(pokemon_data: dict) -> Dict[str, PokedexEntry]:
 
         pokemon = {}
 

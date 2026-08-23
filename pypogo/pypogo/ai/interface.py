@@ -1,8 +1,12 @@
 from abc import ABC, abstractmethod
 from enum import Enum
-from pypogo.action import PvpAction
+from typing import TYPE_CHECKING, Optional
 
+from pypogo.action import PvpAction
 from pypogo.constants import BattlePhase
+
+if TYPE_CHECKING:
+    from pypogo.player import Player
 
 
 class AIStatus(Enum):
@@ -33,8 +37,12 @@ class AInterface(ABC):
     into every call, so `PvpBattle` can keep calling `decide_action(phase)`.
     """
 
+    #: Set by each implementation's __init__. Declared here because the
+    #: helpers and is_valid_action below all read through it.
+    player: "Player"
+
     @property
-    def opponent(self):
+    def opponent(self) -> Optional["Player"]:
         """The opposing Player, or None outside of a battle."""
         return getattr(self.player, "opponent", None)
 
@@ -48,7 +56,7 @@ class AInterface(ABC):
     def select_team(
         self,
         previous_teams=None,
-        previous_result: str = None,
+        previous_result: Optional[str] = None,
         selection_strategy=None,
     ):
         pass

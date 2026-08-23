@@ -1,7 +1,6 @@
-from typing import List
+from dataclasses import dataclass
 from enum import Enum, Flag, auto
-
-from attr import dataclass
+from typing import Any, List
 
 from pypogo.pokemon import PvpPokemon
 
@@ -60,7 +59,8 @@ class Scenario:
     name: ScenarioType
     opponent: PvpPokemon
     matchups: List[int]
-    average: int
+    # A shield-weighted mean, so float rather than int.
+    average: float
     min_shields: int
 
     @property
@@ -79,12 +79,15 @@ class Scenario:
 class RosterPerformance:
     pokemon: PvpPokemon
     scenarios: List[Scenario]
-    average: int
+    average: float
 
 
 @dataclass
 class DecisionOption:
-    value: DecisionType
+    # Deliberately Any: choose_option is reused for weighted picks over
+    # DecisionTypes (team selection), ints (switch target index) and bools
+    # (shield yes/no).
+    value: Any
     weight: int
 
 

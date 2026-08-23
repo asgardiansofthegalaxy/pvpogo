@@ -1,16 +1,16 @@
 import json
-from typing import List
 from functools import cached_property
+from typing import List
 
-from .buff import BuffState, BUFF_MULTIPLIER
+from .buff import BUFF_MULTIPLIER, BuffState
 from .constants import (
     CP_MULTIPLIER,
-    MAX_LEVEL,
     MAX_IV,
+    MAX_LEVEL,
 )
+from .moves import Move, MoveKind
 from .pokedex import PokedexEntry
 from .stats import Stats, get_cp_from_stats
-from .moves import Move, MoveKind
 
 
 class Pokemon:
@@ -36,7 +36,7 @@ class Pokemon:
             raise ValueError(
                 f"Invalid stamina IV: Stamina IV must be between 0 and {MAX_IV}"
             )
-        if not fast_move.move_id in pdex_mon.fast_moves:
+        if fast_move.move_id not in pdex_mon.fast_moves:
             raise ValueError(
                 "Invalid fast move: Fast move is not valid for this Pokémon"
             )
@@ -78,17 +78,7 @@ class Pokemon:
             Move: The best charged move of the Pokémon.
         """
         # TODO: Improve this logic
-        return max(self.charged_moves, key=lambda move: move.damage)
-
-    @property
-    def active_charged_moves(self) -> List[Move]:
-        """
-        Returns the active charged moves of the Pokémon.
-
-        Returns:
-            List[Move]: The active charged moves of the Pokémon.
-        """
-        return [move for move in self.charged_moves if move.energy <= self.energy]
+        return max(self.charged_moves, key=lambda move: move.power)
 
     @property
     def full_hp(self) -> int:
@@ -295,6 +285,16 @@ class PvpPokemon(Pokemon):
         Sets the cooldown of the Pokémon.
         """
         self._cooldown = value
+
+    @property
+    def active_charged_moves(self) -> List[Move]:
+        """
+        Returns the charged moves this Pokemon currently has energy for.
+
+        Lives on PvpPokemon rather than Pokemon because `energy` is battle
+        state and only exists here.
+        """
+        return [move for move in self.charged_moves if move.energy <= self.energy]
 
     @property
     def buff_multiplier_atk(self):

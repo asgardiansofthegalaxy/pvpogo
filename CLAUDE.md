@@ -15,6 +15,24 @@ throughout. Treat all of it as legacy scaffolding to be replaced with original s
 behind the same interfaces. When adding code, prefer generic domain vocabulary (`species`, `creature`,
 `element`) over the Pokémon-specific naming used by the existing modules.
 
+## The gate
+
+`npm run verify` (eslint, tsc, ruff, mypy, pytest -- ~15s) is the single source of
+truth for "is the tree green". `npm run verify:all` adds a production build and the
+Playwright E2E suite. CI runs the latter on every push; a Claude Code `Stop` hook
+(`.claude/settings.json` -> `scripts/stop-gate.sh`) runs the fast one and blocks the
+turn from ending while it is red.
+
+Run it before claiming anything works. Do not add a check that is red on arrival --
+a gate that is red by default gets ignored, which is worse than no gate.
+
+The Python half wants `pypogo/.venv`:
+
+```bash
+python3 -m venv pypogo/.venv
+pypogo/.venv/bin/pip install -r pypogo/requirements-dev.txt -e pypogo
+```
+
 ## Commands
 
 Frontend, from the repo root:
@@ -53,7 +71,7 @@ hardcoded in `pokexperience/pokexperience/settings.py`.
 cd pypogo/pokexperience
 python3 manage.py migrate
 python3 manage.py runserver
-python3 manage.py load_json_to_db     # currently broken: indexes options[] by path, not by arg name
+python3 manage.py load_json_to_db     # resolves the bundled JSON off the pypogo package
 ```
 
 ## Architecture
@@ -161,6 +179,13 @@ JSON. It duplicates rather than imports the `pypogo` dataclasses; the two will d
   numbers carry more than one form (`stunfisk` and `stunfisk_galarian` are both 618).
 - **`.eslintignore` must exclude `pypogo`.** The ESLint CLI otherwise walks into `pypogo/venv` and
   aborts on a Jupyter lab extension's config.
+- **`npm install` needs `.npmrc`'s `legacy-peer-deps`.** `@formspree/react` declares a peer range of
+  react@^16-18 while the project is on React 19; without the flag npm refuses to resolve the tree.
+- **The engine has no third-party runtime dependencies** -- it is pure stdlib, and `pypogo/setup.py`
+  declares no `install_requires`. Keep it that way: an undeclared `attrs` import used to work only
+  because it happened to be present in one contributor's interpreter, and broke in a clean venv.
+- **`pypogo/venv/` is a broken leftover** (no interpreter in it). The real one is `pypogo/.venv`.
+  Both are gitignored; deleting the old one is safe but nobody has.
 
 ## Conventions
 

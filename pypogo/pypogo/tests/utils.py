@@ -1,9 +1,9 @@
 import json
-from pypogo.moves import Move
+
 from pypogo.game_master.game_master import GameMaster
+from pypogo.moves import Move
 from pypogo.pokedex import PokedexEntry
 from pypogo.pokemon import Pokemon, PvpPokemon
-
 from pypogo.stats import Stats
 
 GM = GameMaster()

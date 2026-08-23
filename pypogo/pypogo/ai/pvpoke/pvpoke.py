@@ -12,16 +12,15 @@ from pypogo.player import Player
 from pypogo.pokemon import PvpPokemon
 
 from .constants import (
-    AILevel,
     AI_ARCHETYPES,
+    SWITCH_STRATEGIES,
+    AILevel,
     DecisionOption,
     DecisionType,
     ScenarioType,
     Strategy,
-    SWITCH_STRATEGIES,
 )
 from .utils import choose_option
-
 
 # Order used whenever a heuristic produces nothing legal. Mirrors NaiveAI so a
 # PvPokeAI always has a legal move to fall back on and never stalls a battle.
@@ -47,19 +46,19 @@ class PvPokeAI(AInterface):
         self.name = name
         self.level = level
         self.archetype = AI_ARCHETYPES[self.level]
-        self.previous_strategy = None
+        self.previous_strategy: Optional[Strategy] = None
         self.current_strategy = Strategy.DEFAULT
         self.last_turn_evaluated = 0
         self.party_size = 3
         # run_scenario costs nine simulated battles, and the shield/switch
         # heuristics ask for the same matchup repeatedly within one battle.
-        self._scenario_cache = {}
+        self._scenario_cache: dict = {}
 
     def select_team(
         self,
         previous_teams: Optional[List[List[PvpPokemon]]] = None,
-        previous_result: str = None,
-        selection_strategy: DecisionType = None,
+        previous_result: Optional[str] = None,
+        selection_strategy: Optional[DecisionType] = None,
     ) -> List[PvpPokemon]:
         """
         Selects a team of Pokemon for battle based on the current opponent,
@@ -169,9 +168,13 @@ class PvPokeAI(AInterface):
         if not self.player.is_active_alive:
             return self._resolve(self._switch_action(), battle_phase)
 
-        return self._resolve(self._decide_battle_action(battle_phase), battle_phase)
+        return self._resolve(
+            self._decide_battle_action(battle_phase, opponent), battle_phase
+        )
 
-    def _decide_battle_action(self, battle_phase: BattlePhase) -> Optional[PvpAction]:
+    def _decide_battle_action(
+        self, battle_phase: BattlePhase, opponent: Player
+    ) -> Optional[PvpAction]:
         """
         The core turn-by-turn heuristic: farm energy, overfarm, or switch out.
 
@@ -179,7 +182,6 @@ class PvPokeAI(AInterface):
             PvpAction | None: The action the heuristics picked, or None to let
             the baseline attack logic decide.
         """
-        opponent = self.opponent
         action = None
         attacker = self.player.active_pokemon
         defender = opponent.active_pokemon
@@ -270,17 +272,19 @@ class PvPokeAI(AInterface):
                 action = PvpAction.FAST
 
         if action is None:
-            action = self._baseline_action(battle_phase)
+            action = self._baseline_action(battle_phase, opponent)
 
         return action
 
-    def _baseline_action(self, battle_phase: BattlePhase) -> Optional[PvpAction]:
+    def _baseline_action(
+        self, battle_phase: BattlePhase, opponent: Player
+    ) -> Optional[PvpAction]:
         """
         Default attacking behaviour when no strategy fired: throw the hardest
         affordable charged move, otherwise keep building energy with a fast move.
         """
         attacker = self.player.active_pokemon
-        defender = self.opponent.active_pokemon
+        defender = opponent.active_pokemon
 
         affordable = [
             action
@@ -439,7 +443,7 @@ class PvPokeAI(AInterface):
             return False
 
         # Now that we have the possible moves, let's guess which one the opponent will use
-        options = []
+        options: List[DecisionOption] = []
         for i, move in enumerate(possible_moves):
             move_weight = 1
 
@@ -528,8 +532,8 @@ class PvPokeAI(AInterface):
             ) * (defender.fast_move.cooldown_turns)
             if (
                 move_damage >= attacker.hp
-                or (move_damage >= defender.full_hp * 0.8)
-                and turns_away <= 1
+                or ((move_damage >= defender.full_hp * 0.8)
+                and turns_away <= 1)
             ):
                 if self._has_strategy(Strategy.ADVANCED_SHIELDING):
                     yes_weight += 4
@@ -623,7 +627,7 @@ class PvPokeAI(AInterface):
         return strategy in self.archetype.strategies
 
     def _get_team_selection_strategy(
-        self, opponent_roster: List[PvpPokemon], previous_result: str
+        self, opponent_roster: List[PvpPokemon], previous_result: Optional[str]
     ) -> DecisionType:
         """
         Generate a selection strategy based on the previous battle result.

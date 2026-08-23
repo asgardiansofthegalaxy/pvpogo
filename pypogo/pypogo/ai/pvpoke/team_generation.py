@@ -1,7 +1,8 @@
 import random
 from typing import List
-from pypogo.ai.pvpoke.roster_analysis import RosterAnalyzer
 
+from pypogo.ai.pvpoke.constants import ScenarioType
+from pypogo.ai.pvpoke.roster_analysis import RosterAnalyzer
 from pypogo.pokemon import PvpPokemon
 
 
@@ -114,7 +115,7 @@ class TeamGenerator:
 
         # Calculate who counters the lead's counters
         scenarios = RosterAnalyzer.run_bulk_scenarios(
-            "NO_BAIT", team[0], opponent_roster
+            ScenarioType.NO_BAIT, team[0], opponent_roster
         )
         scenarios = sorted(scenarios, key=lambda x: x.average)
 
@@ -227,7 +228,7 @@ class TeamGenerator:
 
         # Run scenarios to see who counters the lead's counters from the opponent roster
         scenarios = RosterAnalyzer.run_bulk_scenarios(
-            "NO_BAIT", team[0], opponent_roster
+            ScenarioType.NO_BAIT, team[0], opponent_roster
         )
         scenarios = sorted(scenarios, key=lambda x: x.average)
 

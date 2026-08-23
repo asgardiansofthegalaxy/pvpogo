@@ -1,11 +1,11 @@
-from typing import List
+import json
+from dataclasses import dataclass, field
 from enum import Enum
 from functools import cached_property
-from dataclasses import dataclass, field
-import json
+from typing import List, Optional
 
-from .regions import Region, REGIONAL_DEX_NUMBERS, UNKNOWN_REGION, REGIONS
 from .poketypes import PokeType
+from .regions import REGIONAL_DEX_NUMBERS, REGIONS, UNKNOWN_REGION, Region
 from .stats import Stats
 
 
@@ -26,9 +26,9 @@ class PokedexTags(Enum):
 
 @dataclass
 class PokemonFamily:
-    family_id: int
-    parent: str = None
-    evolutions: List[str] = field(default_factory=List)
+    family_id: str
+    parent: Optional[str] = None
+    evolutions: List[str] = field(default_factory=list)
 
 
 class PokedexEntry:
@@ -44,7 +44,7 @@ class PokedexEntry:
         fast_moves: List[str],
         charged_moves: List[str],
         buddy_distance: int,
-        third_move_cost: int = None,
+        third_move_cost: Optional[int] = None,
     ):
         self.dex_number = dex_number
         self.species_name = species_name

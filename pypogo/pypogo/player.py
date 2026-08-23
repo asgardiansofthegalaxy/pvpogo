@@ -1,12 +1,12 @@
-from typing import List
+from typing import List, Optional
 
 from pypogo.ai import AIStatus
 from pypogo.moves import MoveKind
 
-from .ai.naive import NaiveAI
-from .pokemon import PvpPokemon
-from .buff import BuffState
 from .action import PvpAction
+from .ai.naive import NaiveAI
+from .buff import BuffState
+from .pokemon import PvpPokemon
 
 
 class Player:
@@ -27,7 +27,7 @@ class Player:
         self._shields = self._starting_shields
         self.switch_timer = 0
         self._shields_used = 0
-        self.opponent: "Player" = None
+        self.opponent: Optional["Player"] = None
         self.battle = None
 
     def enter_battle(self, battle, opponent: "Player"):

@@ -1,7 +1,8 @@
-from functools import cached_property
 import json
-from enum import Enum
 import math
+from enum import Enum
+from functools import cached_property
+from typing import Optional
 
 from pypogo.constants import (
     CHARGE_DEFAULT_MOD,
@@ -11,8 +12,8 @@ from pypogo.constants import (
     TURN_TIME,
 )
 
-from .poketypes import PokeType
 from .buff import MoveBuff
+from .poketypes import PokeType
 
 
 class Archetype(Enum):
@@ -56,7 +57,7 @@ class Move:
         energy: int = 0,
         energy_gain: int = 0,
         cooldown: int = 0,
-        buff: MoveBuff = None,
+        buff: Optional[MoveBuff] = None,
         archetype: Archetype = Archetype.NONE,
     ):
         """
