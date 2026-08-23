@@ -236,6 +236,13 @@ class BattleEndCond(Enum):
     BOTH_FAINT = 1
 
 
+#: Seed for a battle's charge-move-priority coin flip. A fixed default makes
+#: every simulation reproducible, which is what lets analysis results be
+#: precomputed and checked for drift. Pass cmp_seed=None to PvpBattle for the
+#: live game's genuine unpredictability.
+DEFAULT_CMP_SEED = 0
+
+
 class CMPRule(Enum):
     CMP_IDEAL = 0
     CMP_ALTERNATE = 1

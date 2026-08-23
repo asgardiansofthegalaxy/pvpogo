@@ -1,11 +1,11 @@
 import random
-import time
 from typing import Optional
 
 from pypogo.pokemon import PvpPokemon
 
 from .action import PvpAction
 from .constants import (
+    DEFAULT_CMP_SEED,
     SWITCH_TIMEOUT_TURNS,
     SWITCH_TURNS,
     BattlePhase,
@@ -16,7 +16,11 @@ from .player import Player
 
 class PvpBattle:
     def __init__(
-        self, player_one: Player, player_two: Player, keep_history: bool = True
+        self,
+        player_one: Player,
+        player_two: Player,
+        keep_history: bool = True,
+        cmp_seed: Optional[int] = DEFAULT_CMP_SEED,
     ):
         self.p1 = player_one
         self.p2 = player_two
@@ -26,6 +30,17 @@ class PvpBattle:
         self._phase: BattlePhase = BattlePhase.COUNTDOWN
         self.cmp_rule: CMPRule = CMPRule.CMP_IDEAL
         self.cmp_alt_state: bool = False
+
+        # CMP_IDEAL breaks an attack-stat tie with a coin flip, which the live
+        # game does too. This used to call random.seed(time.time()) and then
+        # random.choice on the process-wide RNG, which made battles
+        # irreproducible, correlated the "coin flips" that landed inside one
+        # clock tick, and reset the global stream that PvPokeAI draws its
+        # energy guesses from. See _break_attack_tie for how the flip is made
+        # reproducible without letting seating decide it; cmp_seed=None opts
+        # back into genuine unpredictability.
+        self._cmp_seed = cmp_seed
+        self._cmp_rng = random.Random(cmp_seed)
         self._history: Optional[list] = [] if keep_history else None
         self._keep_history = keep_history
 
@@ -347,8 +362,7 @@ class PvpBattle:
 
         if self.cmp_rule == CMPRule.CMP_IDEAL:
             if a1 == a2:
-                random.seed(time.time())
-                return random.choice([True, False])
+                return self._break_attack_tie()
             else:
                 return a2 < a1
 
@@ -365,6 +379,50 @@ class PvpBattle:
         else:
             # Handle unknown CMP rule case
             raise ValueError("Encountered unknown CMP Rule!")
+
+    @staticmethod
+    def _cmp_identity(pokemon: PvpPokemon) -> tuple:
+        """What makes two actives the same combatant for tie-breaking purposes."""
+        return (
+            pokemon.pdex_mon.species_id,
+            pokemon.level,
+            pokemon.fast_move.move_id,
+            tuple(sorted(move.move_id for move in pokemon.charged_moves)),
+        )
+
+    def _break_attack_tie(self) -> bool:
+        """
+        Decide a charge-move-priority tie without letting seating decide it.
+
+        The live game resolves an attack-stat tie at random, and a per-battle
+        coin flip models that badly: whoever happens to be player one wins
+        every tie in the battle. In analysis that surfaces as A beating B and
+        B also beating A, because each was player one in its own simulation --
+        21 of Great League's 4,950 meta pairs, by up to 96 rating points.
+
+        So the flip is seeded from the *pair* instead of the battle. The same
+        two Pokemon resolve ties the same way whichever side they sit on,
+        which keeps rating(a vs b) and rating(b vs a) summing to 1000.
+
+        A true mirror has no pair to tell apart, so it alternates: that is
+        what makes a Pokemon rate about 500 against a copy of itself instead
+        of winning -- or losing -- every collision in the battle.
+        """
+        if self._cmp_seed is None:
+            return self._cmp_rng.choice([True, False])
+
+        p1_identity = self._cmp_identity(self.p1.active_pokemon)
+        p2_identity = self._cmp_identity(self.p2.active_pokemon)
+
+        if p1_identity == p2_identity:
+            self.cmp_alt_state = not self.cmp_alt_state
+            return self.cmp_alt_state
+
+        first, second = sorted((p1_identity, p2_identity))
+        # random.Random seeds from a string via SHA-512, so this does not
+        # depend on PYTHONHASHSEED the way hash() would.
+        rng = random.Random(repr((self._cmp_seed, first, second)))
+        return rng.choice([True, False]) == (p1_identity == first)
 
     def _handle_faints(self):
         """

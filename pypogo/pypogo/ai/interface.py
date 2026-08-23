@@ -94,9 +94,16 @@ class AInterface(ABC):
             if battle_phase != BattlePhase.NEUTRAL or not self.player.is_active_alive or self.player.has_cooldown:
                 return False
             move_index = 0 if action == PvpAction.CHARGED1 else 1
-            energy_required = self.player.active_pokemon.charged_moves[
-                move_index
-            ].energy
+            charged_moves = self.player.active_pokemon.charged_moves
+
+            # 61 species in the dataset declare a single charged move, and a
+            # Pokemon built without an explicit moveset gets whatever the pool
+            # holds. Such a Pokemon has no second charged move to throw, which
+            # is a "no", not an IndexError.
+            if move_index >= len(charged_moves):
+                return False
+
+            energy_required = charged_moves[move_index].energy
 
             return energy_required <= self.player.active_pokemon.energy
         
