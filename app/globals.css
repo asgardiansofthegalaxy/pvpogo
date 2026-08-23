@@ -5,16 +5,83 @@
 :root {
   --background: #ffffff;
   --foreground: #111827;
+
+  /* Teal is the product's voice; the surfaces below are tinted from it rather
+     than left on browser defaults. */
+  --accent: #2dd4bf;
+  --accent-contrast: #042f2e;
+  --surface-deep: #042f2e;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #111827;
-    --foreground: #ffffff;
+    --background: #042f2e;
+    --foreground: #f0fdfa;
   }
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Numeric columns (CP, IVs, stat products) must not shift width as they change. */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+:root {
+  caret-color: var(--accent);
+  scrollbar-color: rgb(45 212 191 / 0.35) transparent;
+  scrollbar-width: thin;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(45 212 191 / 0.28);
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(45 212 191 / 0.5);
+  background-clip: content-box;
+}
+
+/* Fallback ring for anything that doesn't define its own focus treatment. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* HeroUI components draw their own focus state; don't stack a second ring. */
+[data-slot]:focus-visible,
+[data-slot] :focus-visible {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

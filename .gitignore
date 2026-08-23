@@ -65,6 +65,10 @@ GAME_MASTER*.json
 *.sln
 *.sw?
 
+# Generated from the engine dataset by scripts/build-web-data.mjs on predev
+# and prebuild. Not committed, so it cannot drift from the engine's copy.
+/public/data/
+
 # Playwright
 /test-results/
 /playwright-report/

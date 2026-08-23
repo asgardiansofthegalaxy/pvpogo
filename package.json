@@ -12,7 +12,10 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "verify": "bash scripts/verify.sh",
-    "verify:all": "bash scripts/verify.sh --with-e2e"
+    "verify:all": "bash scripts/verify.sh --with-e2e",
+    "build:data": "node scripts/build-web-data.mjs",
+    "prebuild": "node scripts/build-web-data.mjs",
+    "predev": "node scripts/build-web-data.mjs"
   },
   "dependencies": {
     "@formspree/react": "^2.5.1",

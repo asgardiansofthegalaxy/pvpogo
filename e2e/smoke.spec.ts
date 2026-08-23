@@ -2,12 +2,11 @@ import { expect, test, type ConsoleMessage, type Page } from "@playwright/test";
 
 /**
  * Smoke gate. These assert the app boots, routes, and that the team builder's
- * core interaction works -- enough that an agent can tell whether a frontend
- * change broke something without a human opening a browser.
+ * core interaction works against the real dataset -- enough that an agent can
+ * tell whether a frontend change broke something without opening a browser.
  */
 
-/** Sprite images are fetched from a third-party host; a flaky CDN is not a bug in this app. */
-const IGNORED_CONSOLE = [/raw\.githubusercontent\.com/, /favicon/, /ERR_INTERNET_DISCONNECTED/];
+const IGNORED_CONSOLE = [/favicon/, /ERR_INTERNET_DISCONNECTED/];
 
 function collectConsoleErrors(page: Page): string[] {
   const errors: string[] = [];
@@ -19,6 +18,13 @@ function collectConsoleErrors(page: Page): string[] {
   });
   page.on("pageerror", (err) => errors.push(String(err)));
   return errors;
+}
+
+/** The roster is fetched, so wait for it rather than racing the skeleton. */
+async function gotoTeamBuilder(page: Page) {
+  await page.goto("/team");
+  await expect(page.getByRole("heading", { name: "Team Builder" })).toBeVisible();
+  await expect(page.getByPlaceholder("Search Pokémon...")).toBeVisible();
 }
 
 test.describe("landing page", () => {
@@ -44,57 +50,80 @@ test.describe("landing page", () => {
 
 test.describe("team builder", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/team");
+    await gotoTeamBuilder(page);
   });
 
-  test("starts empty", async ({ page }) => {
-    await expect(page.getByText("No Pokemon selected")).toBeVisible();
-    await expect(page.getByText("0/6 Pokemon selected")).toBeVisible();
+  test("loads the full roster from the engine dataset", async ({ page }) => {
+    // The old page hardcoded 136 stub entries with no stats. This asserts we
+    // are on the real dataset, not a stub.
+    await expect(page.getByText(/1,2\d\d of 1,2\d\d/)).toBeVisible();
+  });
+
+  test("starts with three empty slots", async ({ page }) => {
+    await expect(page.getByText("0/3 selected")).toBeVisible();
+    await expect(page.getByText("Pick a Pokémon to fill this slot")).toHaveCount(3);
   });
 
   test("search filters the roster", async ({ page }) => {
-    await page.getByPlaceholder("Search Pokemon...").fill("bulba");
+    await page.getByPlaceholder("Search Pokémon...").fill("azumarill");
 
-    await expect(page.getByText("Bulbasaur", { exact: true })).toBeVisible();
-    await expect(page.getByText("Charmander", { exact: true })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /Add Azumarill/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Add Charmander/ })).toHaveCount(0);
   });
 
-  test("adds and removes a Pokemon", async ({ page }) => {
-    const roster = page.getByPlaceholder("Search Pokemon...");
-    await roster.fill("bulbasaur");
-    await page.getByText("Bulbasaur", { exact: true }).click();
+  test("adds a Pokemon with a real CP under the league cap", async ({ page }) => {
+    await page.getByPlaceholder("Search Pokémon...").fill("azumarill");
+    await page.getByRole("button", { name: /Add Azumarill/ }).click();
 
-    await expect(page.getByText("1/6 Pokemon selected")).toBeVisible();
-    await expect(page.getByText("No Pokemon selected")).toHaveCount(0);
+    await expect(page.getByText("1/3 selected")).toBeVisible();
 
-    await page.getByRole("button", { name: "✕" }).click();
-
-    await expect(page.getByText("0/6 Pokemon selected")).toBeVisible();
-    await expect(page.getByText("No Pokemon selected")).toBeVisible();
+    // Great League caps at 1500; the auto-levelled pick must land under it.
+    const cp = await page.getByRole("listitem").filter({ hasText: "Azumarill" })
+      .locator("p.tabular-nums").first().innerText();
+    expect(Number(cp)).toBeGreaterThan(1000);
+    expect(Number(cp)).toBeLessThanOrEqual(1500);
   });
 
-  test("caps the team at six", async ({ page }) => {
-    const names = [
-      "Bulbasaur", "Charmander", "Squirtle", "Pikachu",
-      "Sandshrew", "Clefairy", "Vulpix",
-    ];
-    const search = page.getByPlaceholder("Search Pokemon...");
+  test("removes a Pokemon", async ({ page }) => {
+    await page.getByPlaceholder("Search Pokémon...").fill("azumarill");
+    await page.getByRole("button", { name: /Add Azumarill/ }).click();
+    await expect(page.getByText("1/3 selected")).toBeVisible();
 
-    for (const name of names) {
+    await page.getByRole("button", { name: /Remove Azumarill/ }).click();
+    await expect(page.getByText("0/3 selected")).toBeVisible();
+  });
+
+  test("caps the team at three", async ({ page }) => {
+    const search = page.getByPlaceholder("Search Pokémon...");
+    for (const name of ["Azumarill", "Medicham", "Skarmory", "Registeel"]) {
       await search.fill(name);
-      await page.getByText(name, { exact: true }).first().click();
+      const button = page.getByRole("button", { name: new RegExp(`Add ${name}`) });
+      if (await button.isEnabled().catch(() => false)) await button.click();
     }
 
-    // Seven clicked, six allowed.
-    await expect(page.getByText("6/6 Pokemon selected")).toBeVisible();
+    // Four attempted, three allowed.
+    await expect(page.getByText("3/3 selected")).toBeVisible();
+  });
+
+  test("switching league re-caps the team", async ({ page }) => {
+    await page.getByPlaceholder("Search Pokémon...").fill("azumarill");
+    await page.getByRole("button", { name: /Add Azumarill/ }).click();
+
+    const cpOf = async () =>
+      Number(
+        await page.getByRole("listitem").filter({ hasText: "Azumarill" })
+          .locator("p.tabular-nums").first().innerText()
+      );
+
+    const greatCp = await cpOf();
+    await page.getByRole("tab", { name: /Ultra League/ }).click();
+    await expect.poll(cpOf).toBeGreaterThan(greatCp);
+    expect(await cpOf()).toBeLessThanOrEqual(2500);
   });
 });
 
 test.describe("IP hygiene", () => {
   test("no publisher artwork is requested", async ({ page }) => {
-    // The species mark is drawn by SpeciesAvatar, not fetched. If a sprite host
-    // ever creeps back into the UI, this catches it at runtime rather than
-    // relying on a source grep alone.
     const assetRequests: string[] = [];
     page.on("request", (req) => {
       const url = req.url();
@@ -103,9 +132,9 @@ test.describe("IP hygiene", () => {
       }
     });
 
-    await page.goto("/team");
-    await page.getByPlaceholder("Search Pokemon...").fill("bulbasaur");
-    await page.getByText("Bulbasaur", { exact: true }).click();
+    await gotoTeamBuilder(page);
+    await page.getByPlaceholder("Search Pokémon...").fill("azumarill");
+    await page.getByRole("button", { name: /Add Azumarill/ }).click();
     await page.waitForLoadState("networkidle");
 
     expect(assetRequests, `publisher asset requests: ${assetRequests.join(", ")}`).toEqual([]);

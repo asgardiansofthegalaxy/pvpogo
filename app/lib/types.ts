@@ -1,49 +1,57 @@
 /**
- * Type colour tokens, shared by chips and species avatars.
+ * Type colour tokens, shared by chips and species marks.
  *
  * Type names are factual references to the game's mechanics; the colours here
- * are this project's own choices, not lifted palettes.
+ * are this project's own choices, not lifted palettes. The dataset stores types
+ * lowercase, so every lookup normalises first.
  */
 
-export const TYPE_COLORS: Record<string, string> = {
-  Normal: "bg-gray-400",
-  Fire: "bg-orange-500",
-  Water: "bg-blue-500",
-  Electric: "bg-yellow-500",
-  Grass: "bg-green-500",
-  Ice: "bg-cyan-300",
-  Fighting: "bg-red-700",
-  Poison: "bg-purple-500",
-  Ground: "bg-amber-600",
-  Flying: "bg-indigo-400",
-  Psychic: "bg-pink-500",
-  Bug: "bg-lime-500",
-  Rock: "bg-stone-500",
-  Ghost: "bg-purple-800",
-  Dragon: "bg-indigo-700",
-  Dark: "bg-gray-800",
-  Steel: "bg-slate-400",
-  Fairy: "bg-pink-300",
+const CHIP: Record<string, string> = {
+  normal: "bg-stone-400/90",
+  fire: "bg-orange-500/90",
+  water: "bg-sky-500/90",
+  electric: "bg-amber-400/90",
+  grass: "bg-green-500/90",
+  ice: "bg-cyan-400/90",
+  fighting: "bg-rose-600/90",
+  poison: "bg-fuchsia-600/90",
+  ground: "bg-amber-600/90",
+  flying: "bg-indigo-400/90",
+  psychic: "bg-pink-500/90",
+  bug: "bg-lime-500/90",
+  rock: "bg-stone-500/90",
+  ghost: "bg-violet-700/90",
+  dragon: "bg-indigo-600/90",
+  dark: "bg-neutral-700/90",
+  steel: "bg-slate-400/90",
+  fairy: "bg-pink-400/90",
 };
 
-/** Gradient ramps used by SpeciesAvatar, one per type. */
-export const TYPE_GRADIENTS: Record<string, string> = {
-  Normal: "from-gray-300 to-gray-500",
-  Fire: "from-orange-400 to-red-600",
-  Water: "from-sky-400 to-blue-600",
-  Electric: "from-yellow-300 to-amber-500",
-  Grass: "from-lime-400 to-green-600",
-  Ice: "from-cyan-200 to-sky-400",
-  Fighting: "from-red-500 to-rose-800",
-  Poison: "from-fuchsia-400 to-purple-700",
-  Ground: "from-amber-400 to-yellow-700",
-  Flying: "from-indigo-300 to-sky-500",
-  Psychic: "from-pink-400 to-rose-600",
-  Bug: "from-lime-300 to-lime-600",
-  Rock: "from-stone-400 to-stone-600",
-  Ghost: "from-purple-500 to-indigo-900",
-  Dragon: "from-indigo-500 to-violet-800",
-  Dark: "from-gray-600 to-gray-900",
-  Steel: "from-slate-300 to-slate-600",
-  Fairy: "from-pink-300 to-fuchsia-500",
+const GRADIENT: Record<string, string> = {
+  normal: "from-stone-300 to-stone-500",
+  fire: "from-orange-400 to-red-600",
+  water: "from-sky-400 to-blue-600",
+  electric: "from-amber-300 to-yellow-500",
+  grass: "from-lime-400 to-green-600",
+  ice: "from-cyan-200 to-sky-500",
+  fighting: "from-rose-500 to-rose-800",
+  poison: "from-fuchsia-400 to-purple-700",
+  ground: "from-amber-400 to-yellow-700",
+  flying: "from-indigo-300 to-sky-500",
+  psychic: "from-pink-400 to-rose-600",
+  bug: "from-lime-300 to-lime-600",
+  rock: "from-stone-400 to-stone-600",
+  ghost: "from-violet-500 to-indigo-900",
+  dragon: "from-indigo-500 to-violet-800",
+  dark: "from-neutral-600 to-neutral-900",
+  steel: "from-slate-300 to-slate-600",
+  fairy: "from-pink-300 to-fuchsia-500",
 };
+
+export function typeChipClass(type: string): string {
+  return CHIP[type.toLowerCase()] ?? "bg-stone-500/90";
+}
+
+export function typeGradient(type: string): string {
+  return GRADIENT[type.toLowerCase()] ?? "from-stone-400 to-stone-600";
+}
