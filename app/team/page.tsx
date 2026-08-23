@@ -5,7 +5,12 @@ import Link from "next/link";
 
 import SpeciesPicker from "@/app/components/SpeciesPicker";
 import TeamSlot, { type TeamMember } from "@/app/components/TeamSlot";
-import { loadMatchups, matchupsFor, type MatchupData } from "@/app/lib/matchups";
+import {
+  buildFor,
+  loadMatchups,
+  matchupsFor,
+  type MatchupData,
+} from "@/app/lib/matchups";
 import {
   LEAGUES,
   TEAM_SIZE,
@@ -81,6 +86,26 @@ export default function TeamBuilder() {
   );
   const full = team.length >= TEAM_SIZE;
 
+  /**
+   * The moveset a fresh pick starts with.
+   *
+   * The exported pools are ordered by pypogo/movesets.py, so their first
+   * entries are already the ranked choice rather than whatever order the
+   * dataset carried -- no more Rock Smash Azumarill. When the league's matchup
+   * file has loaded, the build it was simulated with is better still, since a
+   * meta pick's moveset was brute-forced rather than scored, and starting
+   * there means the panel's ratings describe the Pokémon actually in the slot.
+   */
+  function defaultMoveset(species: Species) {
+    const build = matchups ? buildFor(matchups, species.id) : null;
+    return build
+      ? { fastMoveId: build.fast, chargedMoveIds: build.charged.slice(0, 2) }
+      : {
+          fastMoveId: species.fastMoves[0],
+          chargedMoveIds: species.chargedMoves.slice(0, 2),
+        };
+  }
+
   function addSpecies(species: Species) {
     if (!data || full || chosenIds.includes(species.id)) return;
 
@@ -91,8 +116,7 @@ export default function TeamBuilder() {
       ...current,
       {
         species,
-        fastMoveId: species.fastMoves[0],
-        chargedMoveIds: species.chargedMoves.slice(0, 2),
+        ...defaultMoveset(species),
         level,
         ivs: DEFAULT_IVS,
       },

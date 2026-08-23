@@ -30,11 +30,16 @@ the resulting error, so a future change has to argue with a number.
 """
 
 from itertools import combinations
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 
 from .constants import STAB_BONUS
 from .moves import Move
 from .pokedex import PokedexEntry
+
+#: Derived file carrying the ranking below, beside the dataset it ranks.
+#: Nothing in the engine reads it -- `scripts/build-web-data.mjs` does, so the
+#: website's move pools come out in this order instead of export order.
+MOVESETS_FILE = "movesets.json"
 
 #: Energy a Pokemon generates over a 1v1, in the units charged moves cost.
 #: Only the ratio to a move's cost matters, and the ranking is flat for
@@ -126,6 +131,50 @@ def best_moveset(entry: PokedexEntry, moves: Dict[str, Move]) -> Tuple[str, List
     ranked_fast = rank_fast_moves(entry, moves)
     ranked_charged = rank_charged_moves(entry, moves)
     return ranked_fast[0].move_id, [m.move_id for m in ranked_charged[:2]]
+
+
+def build_rankings(
+    pokedex: Mapping[str, PokedexEntry], moves: Dict[str, Move]
+) -> Dict[str, Dict[str, List[str]]]:
+    """
+    Every buildable species' move pools, best first.
+
+    Species with no usable pool are absent rather than present and empty,
+    matching what `best_moveset` refuses to build.
+    """
+    ranked: Dict[str, Dict[str, List[str]]] = {}
+    for species_id, entry in sorted(pokedex.items()):
+        fast = rank_fast_moves(entry, moves)
+        charged = rank_charged_moves(entry, moves)
+        if not fast or not charged:
+            continue
+        ranked[species_id] = {
+            "fast": [m.move_id for m in fast],
+            "charged": [m.move_id for m in charged],
+        }
+    return ranked
+
+
+def rankings_payload(
+    pokedex: Mapping[str, PokedexEntry], moves: Dict[str, Move]
+) -> dict:
+    """
+    The contents of `MOVESETS_FILE`, as a JSON-ready dict.
+
+    `scripts/build_movesets.py` writes it and `tests/test_movesets.py` checks
+    the committed file still matches, so the two cannot drift.
+    """
+    return {
+        "note": (
+            "Move pools ranked by pypogo.movesets, best first. The dataset lists "
+            "moves in export order, which is not a ranking; anything defaulting to "
+            "the first move needs this order instead. Charged moves are scored by "
+            "the damage a battle's energy buys them, fast moves by the damage they "
+            "deal plus the charged damage their energy funds."
+        ),
+        "energy_budget": ENERGY_BUDGET,
+        "rankings": build_rankings(pokedex, moves),
+    }
 
 
 def enumerate_movesets(

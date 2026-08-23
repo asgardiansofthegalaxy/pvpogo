@@ -1,7 +1,7 @@
 # Handoff
 
-State as of the matchup-matrix work on branch `carlos/dev`. `main` is untouched
-at `3a4fe98`.
+State as of the builder-defaults work on branch `carlos/dev`. `main` is
+untouched at `3a4fe98`.
 
 ## Get running
 
@@ -15,7 +15,7 @@ npm run verify:all    # the above + production build + Playwright  (~75s)
 npm run dev
 ```
 
-Green baseline: **138 Python tests, 14 Playwright tests, ruff/mypy/tsc/eslint
+Green baseline: **142 Python tests, 15 Playwright tests, ruff/mypy/tsc/eslint
 clean.** If any of that is red on arrival, fix it before starting new work --
 the gate is only useful while it is trusted.
 
@@ -31,11 +31,42 @@ loads data or renders a species.
 | Dataset validator | `test_dataset_invariants.py` -- referential integrity, stat ranges, known gaps pinned |
 | Battle engine | Turn-based phase machine, damage/CP formulas match the live game's behaviour. **Now genuinely deterministic** -- see below |
 | Battle AI | `NaiveAI` and `PvPokeAI` (4 tiers, graded 7/14/13/20 of 20 vs naive) |
-| Move ranking | `movesets.py` picks a species' moveset without simulating; measured against brute force in `test_movesets.py` |
+| Move ranking | `movesets.py` picks a species' moveset without simulating; measured against brute force in `test_movesets.py`. Exported as `movesets.json` and used for the website's move order and defaults |
 | Meta + matchups | `meta.py` derives each league's meta and a full matchup matrix; shipped as `matchups.{great,ultra,master}.json` |
-| Website | Team builder on the real 1279-species dataset, showing each pick's best and worst matchups against its league meta |
+| Website | Team builder on the real 1270-species dataset, showing each pick's best and worst matchups against its league meta. A fresh pick starts on the moveset those matchups were simulated with |
 
-## What the last session changed
+## Recent changes
+
+### This session: the builder's defaults
+
+The team builder used to hand every fresh pick `species.fastMoves[0]` -- export
+order, which is not a ranking -- so it built the Rock Smash Azumarill the
+matchup matrix carefully avoids, and then showed matchup numbers with an amber
+"simulated with different moves" note attached to its own default. Both halves
+are fixed:
+
+* **The exported move pools are ranked.** `movesets.py` already knew the order;
+  `scripts/build_movesets.py` now writes it to `movesets.json` beside the
+  dataset, and `build-web-data.mjs` orders every pool by it. `build-web-data.mjs`
+  deliberately has no Python toolchain, which is why the ranking travels as a
+  file rather than being recomputed in JS -- duplicating the scoring is how the
+  two would drift. `test_movesets.py` regenerates the file and compares, so it
+  cannot go stale; the whole ranking is under a second of arithmetic, unlike the
+  matchup rebuild.
+* **A fresh pick starts on the simulated build.** When the league's matchup file
+  is loaded, `addSpecies` takes its moveset from `builds[species]` -- which for
+  a meta pick was brute-forced rather than scored. The ranked pool is the
+  fallback for the moment before that file lands. The panel's ratings now
+  describe the Pokémon actually in the slot.
+
+One thing fell out of it: nine species (Necrozma, Magearna, Zeraora and friends)
+declare Struggle as their entire move pool. The engine refuses to build them,
+but the export's usability check ran against the *declared* pools rather than
+the battle-usable ones, so the picker offered them and picking one produced a
+slot with no fast move at all. The check now uses the ranking's coverage, which
+is exactly the set the engine accepts -- hence 1270 species, not 1279.
+
+### Before that: the matchup matrix
 
 The website can now answer "how does this pick fare against what it will face",
 which is the question a team builder exists for. It does that with **no server**:
@@ -81,22 +112,13 @@ Show coverage gaps: which meta picks beat *all three* of the team. That is the
 answer a team builder exists to give, and `RosterAnalyzer.calculate_roster_performance`'s
 logic becomes a client-side lookup over data that already exists.
 
-### 2. Use the move ranking for the builder's defaults
-
-`movesets.py` already ranks moves and is what the matchup matrix is built on, but
-the **UI still defaults to `species.fastMoves[0]`**, so the builder hands users
-the Rock Smash Azumarill the matrix carefully avoids. Export the ranking in
-`build-web-data.mjs` and default `addSpecies` to it. Small change, and it closes
-a real inconsistency: the panel currently warns "simulated with different moves"
-against defaults this repo already knows are wrong.
-
-### 3. IV optimiser
+### 2. IV optimiser
 
 `StatsRanker.get_iv_rankings` exists in Python and is unreachable from the web.
 For one species under a CP cap this is ~4096 combinations x ~100 levels, fast
 enough client-side. Give the builder a "best IVs for this league" action.
 
-### 4. A fitness function for the AI, then the strategy state machine
+### 3. A fitness function for the AI, then the strategy state machine
 
 Unchanged from before, and still the prerequisite for any AI tuning. The
 matchup matrix is now a plausible basis for the benchmark: a fixed set of
@@ -144,7 +166,12 @@ matchups with known expected outcomes.
 - **The Django app** (`pypogo/pokexperience/`) is scaffolding with one
   placeholder view and duplicated models. Nothing depends on it.
 - **`public/data/` is generated, not committed.** `predev`/`prebuild` rebuild it
-  from the engine dataset and the matchup files.
+  from the engine dataset, `movesets.json` and the matchup files.
+- **Switching league does not re-pick a team's movesets.** Level is re-capped,
+  moves are left alone, because clobbering a choice the user made is worse than
+  the alternative. 89 species have a different simulated build in Great and
+  Ultra, so the panel's "simulated with different moves" note can appear after a
+  league switch. That is the note doing its job, not a bug.
 
 ## Conventions worth not relearning
 

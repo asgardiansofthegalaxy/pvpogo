@@ -75,6 +75,8 @@ python3 pypogo/scripts/battle_demo.py                  # one 3v3 battle, dumps h
 python3 pypogo/scripts/simulation_demo.py              # round-robin over all 3-of-6 team combos
 python3 pypogo/scripts/build_matchups.py              # rebuild the precomputed matchup matrices (~15 min)
 python3 pypogo/scripts/build_matchups.py --check      # verify no drift -- same cost, so run it by hand
+python3 pypogo/scripts/build_movesets.py              # rebuild the exported move ranking (<1s)
+python3 pypogo/scripts/build_movesets.py --check      # verify no drift -- also checked in the gate
 ```
 
 Results are deterministic, so a diff in the roster-performance numbers means real behaviour changed,
@@ -162,7 +164,8 @@ returns a fully built `PvpPokemon`. Loading costs ~0.04s.
 The raw Game Master export is **not** on the import path and is not committed. It is a build input
 for `scripts/build_dataset.py`, which regenerates the two derived files (`--check` verifies no
 drift). Keep it that way: redistributing the publisher's own export is the thing the data policy
-exists to avoid.
+exists to avoid. Regenerating the dataset invalidates `movesets.json` beside it -- rebuild that too,
+or the gate's drift check will say so.
 
 `get_pokemon` refuses to build species with no base stats or no declared moveset -- three unreleased
 species and Smeargle -- rather than returning a 10 HP combatant with a nonsense CP. Those gaps are
@@ -196,6 +199,12 @@ rows affordable. The dataset lists moves in export order, not by quality -- Azum
 move is Rock Smash -- and building on that order costs ~47 rating points on average and 168 at worst.
 The heuristic gives up ~11. Both figures are measured against brute force in `tests/test_movesets.py`,
 so changing the scoring means arguing with a number.
+
+The ranking also ships as `movesets.json` (`scripts/build_movesets.py`), which nothing in the engine
+reads. It exists because `scripts/build-web-data.mjs` deliberately has no Python toolchain, and the
+website needs the same answer: it orders every exported move pool by the ranking, so the UI's
+`fastMoves[0]` is the move the engine would have built with. Ranking the whole dataset is arithmetic
+and costs under a second, so unlike the matchup matrices the drift check runs in the gate.
 
 ### AI layer — the extension point
 

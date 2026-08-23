@@ -111,6 +111,7 @@ function trimMatchups(league) {
 
 const rawSpecies = readJson("pokemon.json");
 const rawMoves = readJson("moves.json");
+const rankings = readJson("movesets.json").rankings;
 const cpMultipliers = readCpMultipliers();
 
 // Keyed by move_id, which is how species reference their move pools.
@@ -130,19 +131,44 @@ for (const entry of Object.values(rawMoves)) {
   };
 }
 
-// Species with no stats or no moveset cannot be built into a battler; the
-// engine refuses them, so the UI should not offer them either.
+/**
+ * A species' move pool, ranked best first.
+ *
+ * The dataset lists moves in the order the export happened to carry them,
+ * which is not a ranking -- Azumarill leads with Rock Smash. pypogo/movesets.py
+ * ranks them, and the matchup matrices are built on its answer, so ordering
+ * the pools by it here is what makes the UI's `fastMoves[0]` the same moveset
+ * the matrix describes.
+ *
+ * Throws if the ranking and the dataset disagree about what a species can run,
+ * which is what a stale movesets.json looks like.
+ */
+function rankedPool(speciesId, declared, ranked, isUsable) {
+  const usable = declared.filter(isUsable);
+  const ordered = ranked.filter(isUsable);
+
+  if (ordered.length !== usable.length || !ordered.every((id) => usable.includes(id))) {
+    throw new Error(
+      `movesets.json disagrees with pokemon.json about ${speciesId}: ranked ` +
+        `[${ordered}] against declared [${usable}]. Regenerate it with:\n` +
+        `  cd pypogo && python3 pypogo/scripts/build_movesets.py`
+    );
+  }
+  return ordered;
+}
+
+// Species with no stats or no battle-usable moveset cannot be built into a
+// battler; the engine refuses them, so the UI should not offer them either.
+// The ranking is absent for exactly those the engine refuses -- nine species
+// declare Struggle as their entire pool -- so its coverage is the test.
 const species = [];
 const skipped = [];
 
 for (const [speciesId, entry] of Object.entries(rawSpecies)) {
   const stats = entry.base_stats;
+  const ranked = rankings[speciesId];
   const usable =
-    stats.attack > 0 &&
-    stats.defense > 0 &&
-    stats.stamina > 0 &&
-    entry.fast_moves.length > 0 &&
-    entry.charged_moves.length > 0;
+    stats.attack > 0 && stats.defense > 0 && stats.stamina > 0 && ranked !== undefined;
 
   if (!usable) {
     skipped.push(speciesId);
@@ -160,8 +186,18 @@ for (const [speciesId, entry] of Object.entries(rawSpecies)) {
       def: stats.defense,
       sta: stats.stamina,
     },
-    fastMoves: entry.fast_moves.filter((id) => moves[id]?.fast),
-    chargedMoves: entry.charged_moves.filter((id) => moves[id] && !moves[id].fast),
+    fastMoves: rankedPool(
+      speciesId,
+      entry.fast_moves,
+      ranked.fast,
+      (id) => moves[id]?.fast === true
+    ),
+    chargedMoves: rankedPool(
+      speciesId,
+      entry.charged_moves,
+      ranked.charged,
+      (id) => moves[id] !== undefined && !moves[id].fast
+    ),
   });
 }
 
@@ -183,7 +219,7 @@ const matchupSummary = LEAGUES.map((league) => {
 }).join("\n");
 
 console.log(
-  `species.json  ${species.length} entries (${kb("species.json")} KB)\n` +
+  `species.json  ${species.length} entries, moves ranked (${kb("species.json")} KB)\n` +
     `moves.json    ${Object.keys(moves).length} entries (${kb("moves.json")} KB)\n` +
     `cp-multipliers.json  ${cpMultipliers.length} levels\n` +
     `${matchupSummary}\n` +

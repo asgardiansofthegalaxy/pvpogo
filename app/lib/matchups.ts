@@ -88,6 +88,21 @@ export function ratedId(data: MatchupData, speciesId: string): string {
   return data.aliases[speciesId] ?? speciesId;
 }
 
+/**
+ * The build a species' ratings were simulated with, or null if it has none.
+ *
+ * Every species the engine can build has one: the meta's are brute-forced,
+ * the rest come from the same ranking that orders the exported move pools.
+ * It is the best moveset this project knows for the league, which makes it
+ * the right default for a fresh pick as well as the caption on the numbers.
+ */
+export function buildFor(
+  data: MatchupData,
+  speciesId: string
+): SimulatedBuild | null {
+  return data.builds[ratedId(data, speciesId)] ?? null;
+}
+
 function hydrate(data: MatchupData, rows: RatedMatchup[] | undefined): Matchup[] {
   if (!rows) return [];
   return rows
@@ -110,7 +125,7 @@ export function matchupsFor(
 
   return {
     ratedAs: id,
-    build: data.builds[id] ?? null,
+    build: buildFor(data, id),
     score: data.score[id] ?? 0,
     best: hydrate(data, data.best[id]),
     worst: hydrate(data, data.worst[id]),

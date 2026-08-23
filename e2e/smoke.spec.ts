@@ -84,6 +84,36 @@ test.describe("team builder", () => {
     expect(Number(cp)).toBeLessThanOrEqual(1500);
   });
 
+  test("a fresh pick defaults to the moveset the matrix simulated", async ({
+    page,
+  }) => {
+    await page.getByPlaceholder("Search Pokémon...").fill("azumarill");
+    await page.getByRole("button", { name: /Add Azumarill/ }).click();
+
+    const team = page.getByRole("region", { name: "Your team" });
+    const slot = team.getByRole("listitem").filter({ hasText: "Azumarill" }).first();
+
+    // The dataset lists Rock Smash first and Play Rough second; the ratings
+    // shown underneath were computed on Bubble / Hydro Pump + Ice Beam, so
+    // that is what the slot has to start with.
+    await expect(slot.getByRole("button", { name: "Fast move" })).toHaveText(
+      /Bubble/
+    );
+    await expect(slot.getByRole("button", { name: "Charged moves" })).toHaveText(
+      /Hydro Pump.*Ice Beam/
+    );
+
+    // Which means the panel has nothing to disclaim about a fresh pick.
+    await expect(slot.getByText(/not the moves you picked/)).toHaveCount(0);
+
+    // And it does have something to disclaim as soon as the build differs,
+    // which is what keeps the assertion above from passing vacuously.
+    await slot.getByRole("button", { name: "Charged moves" }).click();
+    await page.getByRole("option", { name: /Play Rough/ }).click();
+    await page.keyboard.press("Escape");
+    await expect(slot.getByText(/not the moves you picked/)).toHaveCount(1);
+  });
+
   test("removes a Pokemon", async ({ page }) => {
     await page.getByPlaceholder("Search Pokémon...").fill("azumarill");
     await page.getByRole("button", { name: /Add Azumarill/ }).click();

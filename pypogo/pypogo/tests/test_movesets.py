@@ -8,15 +8,19 @@ on a fixed sample small enough to keep the gate fast; the numbers it pins came
 from a wider 38-species sweep, recorded in the assertion messages.
 """
 
+import json
+import os
 from unittest import TestCase
 
 from pypogo.battle import OneVsOneBattle
-from pypogo.game_master.game_master import GameMaster
+from pypogo.game_master.game_master import CWD, GameMaster
 from pypogo.movesets import (
+    MOVESETS_FILE,
     best_moveset,
     enumerate_movesets,
     rank_charged_moves,
     rank_fast_moves,
+    rankings_payload,
 )
 
 GM = GameMaster()
@@ -131,3 +135,63 @@ class MoveRankingQualityTests(TestCase):
             f"ranking gives up {heuristic_mean:.1f} rating points against brute "
             "force; it was ~11 when written",
         )
+
+
+class ExportedRankingTests(TestCase):
+    """
+    The committed `movesets.json` is what the website's build step orders its
+    move pools by, and nothing else reads it, so a stale file would quietly
+    hand the UI a different moveset from the one every rating was computed on.
+    Ranking the whole dataset costs well under a second, so unlike the matchup
+    matrices the drift check is affordable in the gate.
+    """
+
+    def setUp(self):
+        path = os.path.join(CWD, MOVESETS_FILE)
+        self.assertTrue(
+            os.path.exists(path),
+            f"{MOVESETS_FILE} is missing. Build it with:\n"
+            "  cd pypogo && python3 pypogo/scripts/build_movesets.py",
+        )
+        with open(path) as fp:
+            self.committed = json.load(fp)
+
+    def test_committed_file_matches_a_fresh_ranking(self):
+        self.assertEqual(
+            self.committed,
+            rankings_payload(GM.pokedex, GM.moves),
+            f"{MOVESETS_FILE} is stale. Rebuild it with:\n"
+            "  cd pypogo && python3 pypogo/scripts/build_movesets.py",
+        )
+
+    def test_it_covers_every_species_the_engine_can_build(self):
+        buildable = set()
+        for species_id, entry in GM.pokedex.items():
+            try:
+                best_moveset(entry, GM.moves)
+            except ValueError:
+                continue
+            buildable.add(species_id)
+
+        self.assertEqual(set(self.committed["rankings"]), buildable)
+
+    def test_every_ranked_move_exists_and_sits_in_the_right_pool(self):
+        for species_id, pools in self.committed["rankings"].items():
+            entry = GM.pokedex[species_id]
+            with self.subTest(species=species_id):
+                self.assertTrue(pools["fast"] and pools["charged"])
+                for move_id in pools["fast"]:
+                    self.assertTrue(GM.moves[move_id].is_fast)
+                    self.assertIn(move_id, entry.fast_moves)
+                for move_id in pools["charged"]:
+                    self.assertFalse(GM.moves[move_id].is_fast)
+                    self.assertIn(move_id, entry.charged_moves)
+
+    def test_the_first_entries_are_the_moveset_best_moveset_picks(self):
+        # What the website actually relies on: taking the head of each ranked
+        # pool has to give the same answer the engine builds with.
+        for species_id, pools in self.committed["rankings"].items():
+            fast, charged = best_moveset(GM.pokedex[species_id], GM.moves)
+            with self.subTest(species=species_id):
+                self.assertEqual(pools["fast"][0], fast)
+                self.assertEqual(pools["charged"][: len(charged)], charged)
