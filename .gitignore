@@ -1,3 +1,15 @@
+# Dependencies
+node_modules
+node_modules_old
+
+# Next.js build output
+.next
+out
+build
+dist
+dist-ssr
+next-env.d.ts
+
 # Logs
 logs
 *.log
@@ -7,12 +19,34 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+# Environment
+.env
+.env.local
+.env.*.local
 *.local
 
-# Editor directories and files
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+venv/
+.venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.ipynb_checkpoints/
+
+# Django
+db.sqlite3
+db.sqlite3-journal
+
+# Generated demo output from pypogo/pypogo/scripts
+pypogo/pypogo/scripts/*.txt
+
+# Editor / OS
 .vscode/*
 !.vscode/extensions.json
 .idea

@@ -1,0 +1,32 @@
+[
+    {
+        "species_id": "registeel",
+        "fast_move_id": "LOCK_ON",
+        "charged_move_ids": ["FOCUS_BLAST", "ZAP_CANNON"]
+    },
+    {
+        "species_id": "annihilape",
+        "fast_move_id": "COUNTER",
+        "charged_move_ids": ["NIGHT_SLASH", "CLOSE_COMBAT"]
+    },
+    {
+        "species_id": "cresselia",
+        "fast_move_id": "PSYCHO_CUT",
+        "charged_move_ids": ["GRASS_KNOT", "FUTURESIGHT"]
+    },
+    {
+        "species_id": "gligar",
+        "fast_move_id": "WING_ATTACK",
+        "charged_move_ids": ["AERIAL_ACE", "DIG"]
+    },
+    {
+        "species_id": "lickitung",
+        "fast_move_id": "LICK",
+        "charged_move_ids": ["BODY_SLAM", "POWER_WHIP"]
+    },
+    {
+        "species_id": "carbink",
+        "fast_move_id": "ROCK_THROW",
+        "charged_move_ids": ["ROCK_SLIDE", "MOONBLAST"]
+    }
+]

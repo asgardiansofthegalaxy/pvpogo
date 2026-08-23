@@ -1,0 +1,487 @@
+{
+   "team1": [
+     {
+       "pdex_mon": {
+         "dex_number": 184,
+         "species_name": "Azumarill",
+         "species_id": "azumarill",
+         "family": {
+           "family_id": "FAMILY_MARILL",
+           "parent": "MARILL",
+           "evolutions": []
+         },
+         "types": [
+           "water",
+           "fairy"
+         ],
+         "base_stats": {
+           "attack": 112,
+           "defense": 152,
+           "stamina": 225
+         },
+         "tags": [],
+         "fast_moves": [
+           "ROCK_SMASH",
+           "BUBBLE"
+         ],
+         "charged_moves": [
+           "PLAY_ROUGH",
+           "HYDRO_PUMP",
+           "ICE_BEAM"
+         ],
+         "buddy_distance": 3,
+         "third_move_cost": 50000
+       },
+       "level": 45.5,
+       "ivs": {
+         "attack": 0,
+         "defense": 15,
+         "stamina": 15
+       },
+       "fast_move": {
+         "move_id": "BUBBLE",
+         "name": "Bubble Fast",
+         "move_type": "water",
+         "is_fast": true,
+         "power": 8,
+         "energy": 0,
+         "energy_gain": 11,
+         "cooldown": 1500,
+         "buff": null,
+         "archetype": "None"
+       },
+       "charged_moves": [
+         {
+           "move_id": "ICE_BEAM",
+           "name": "Ice Beam",
+           "move_type": "ice",
+           "is_fast": false,
+           "power": 90,
+           "energy": 55,
+           "energy_gain": 0,
+           "cooldown": 500,
+           "buff": null,
+           "archetype": "None"
+         },
+         {
+           "move_id": "PLAY_ROUGH",
+           "name": "Play Rough",
+           "move_type": "fairy",
+           "is_fast": false,
+           "power": 90,
+           "energy": 60,
+           "energy_gain": 0,
+           "cooldown": 500,
+           "buff": null,
+           "archetype": "None"
+         }
+       ]
+     },
+     {
+       "pdex_mon": {
+         "dex_number": 497,
+         "species_name": "Serperior",
+         "species_id": "serperior",
+         "family": {
+           "family_id": "FAMILY_SNIVY",
+           "parent": "SERVINE",
+           "evolutions": []
+         },
+         "types": [
+           "grass",
+           "none"
+         ],
+         "base_stats": {
+           "attack": 161,
+           "defense": 204,
+           "stamina": 181
+         },
+         "tags": [],
+         "fast_moves": [
+           "IRON_TAIL",
+           "VINE_WHIP"
+         ],
+         "charged_moves": [
+           "GRASS_KNOT",
+           "LEAF_TORNADO",
+           "AERIAL_ACE",
+           "FRENZY_PLANT"
+         ],
+         "buddy_distance": 3,
+         "third_move_cost": 10000
+       },
+       "level": 25.5,
+       "ivs": {
+         "attack": 0,
+         "defense": 10,
+         "stamina": 15
+       },
+       "fast_move": {
+         "move_id": "VINE_WHIP",
+         "name": "Vine Whip Fast",
+         "move_type": "grass",
+         "is_fast": true,
+         "power": 5,
+         "energy": 0,
+         "energy_gain": 8,
+         "cooldown": 1000,
+         "buff": null,
+         "archetype": "None"
+       },
+       "charged_moves": [
+         {
+           "move_id": "FRENZY_PLANT",
+           "name": "Frenzy Plant",
+           "move_type": "grass",
+           "is_fast": false,
+           "power": 100,
+           "energy": 45,
+           "energy_gain": 0,
+           "cooldown": 500,
+           "buff": null,
+           "archetype": "None"
+         },
+         {
+           "move_id": "AERIAL_ACE",
+           "name": "Aerial Ace",
+           "move_type": "flying",
+           "is_fast": false,
+           "power": 55,
+           "energy": 40,
+           "energy_gain": 0,
+           "cooldown": 500,
+           "buff": null,
+           "archetype": "None"
+         }
+       ]
+     },
+     {
+       "pdex_mon": {
+         "dex_number": 663,
+         "species_name": "Talonflame",
+         "species_id": "talonflame",
+         "family": {
+           "family_id": "FAMILY_FLETCHLING",
+           "parent": "FLETCHINDER",
+           "evolutions": []
+         },
+         "types": [
+           "fire",
+           "flying"
+         ],
+         "base_stats": {
+           "attack": 176,
+           "defense": 155,
+           "stamina": 186
+         },
+         "tags": [],
+         "fast_moves": [
+           "PECK",
+           "FIRE_SPIN",
+           "STEEL_WING",
+           "INCINERATE"
+         ],
+         "charged_moves": [
+           "BRAVE_BIRD",
+           "FIRE_BLAST",
+           "FLAME_CHARGE",
+           "HURRICANE",
+           "FLY"
+         ],
+         "buddy_distance": 1,
+         "third_move_cost": 10000
+       },
+       "level": 26,
+       "ivs": {
+         "attack": 0,
+         "defense": 13,
+         "stamina": 15
+       },
+       "fast_move": {
+         "move_id": "INCINERATE",
+         "name": "Incinerate Fast",
+         "move_type": "fire",
+         "is_fast": true,
+         "power": 20,
+         "energy": 0,
+         "energy_gain": 20,
+         "cooldown": 2500,
+         "buff": null,
+         "archetype": "None"
+       },
+       "charged_moves": [
+         {
+           "move_id": "FLY",
+           "name": "Fly",
+           "move_type": "flying",
+           "is_fast": false,
+           "power": 80,
+           "energy": 45,
+           "energy_gain": 0,
+           "cooldown": 500,
+           "buff": null,
+           "archetype": "None"
+         },
+         {
+           "move_id": "FLAME_CHARGE",
+           "name": "Flame Charge",
+           "move_type": "fire",
+           "is_fast": false,
+           "power": 65,
+           "energy": 50,
+           "energy_gain": 0,
+           "cooldown": 500,
+           "buff": {
+             "chance": 1,
+             "atk_buff_self": 1,
+             "def_buff_self": 0,
+             "atk_buff_opponent": 0,
+             "def_buff_opponent": 0
+           },
+           "archetype": "None"
+         }
+       ]
+     }
+   ],
+   "team2": [
+     {
+       "pdex_mon": {
+         "dex_number": 227,
+         "species_name": "Skarmory",
+         "species_id": "skarmory",
+         "family": {
+           "family_id": "FAMILY_SKARMORY",
+           "parent": null,
+           "evolutions": []
+         },
+         "types": [
+           "steel",
+           "flying"
+         ],
+         "base_stats": {
+           "attack": 148,
+           "defense": 226,
+           "stamina": 163
+         },
+         "tags": [],
+         "fast_moves": [
+           "STEEL_WING",
+           "AIR_SLASH"
+         ],
+         "charged_moves": [
+           "BRAVE_BIRD",
+           "SKY_ATTACK",
+           "FLASH_CANNON"
+         ],
+         "buddy_distance": 5,
+         "third_move_cost": 75000
+       },
+       "level": 27.5,
+       "ivs": {
+         "attack": 0,
+         "defense": 15,
+         "stamina": 14
+       },
+       "fast_move": {
+         "move_id": "STEEL_WING",
+         "name": "Steel Wing Fast",
+         "move_type": "steel",
+         "is_fast": true,
+         "power": 7,
+         "energy": 0,
+         "energy_gain": 7,
+         "cooldown": 1000,
+         "buff": null,
+         "archetype": "None"
+       },
+       "charged_moves": [
+         {
+           "move_id": "BRAVE_BIRD",
+           "name": "Brave Bird",
+           "move_type": "flying",
+           "is_fast": false,
+           "power": 130,
+           "energy": 55,
+           "energy_gain": 0,
+           "cooldown": 500,
+           "buff": {
+             "chance": 1,
+             "atk_buff_self": 0,
+             "def_buff_self": -3,
+             "atk_buff_opponent": 0,
+             "def_buff_opponent": 0
+           },
+           "archetype": "None"
+         },
+         {
+           "move_id": "SKY_ATTACK",
+           "name": "Sky Attack",
+           "move_type": "flying",
+           "is_fast": false,
+           "power": 75,
+           "energy": 50,
+           "energy_gain": 0,
+           "cooldown": 500,
+           "buff": null,
+           "archetype": "None"
+         }
+       ]
+     },
+     {
+       "pdex_mon": {
+         "dex_number": 618,
+         "species_name": "Stunfisk",
+         "species_id": "stunfisk_galarian",
+         "family": {
+           "family_id": "FAMILY_STUNFISK",
+           "parent": null,
+           "evolutions": []
+         },
+         "types": [
+           "ground",
+           "steel"
+         ],
+         "base_stats": {
+           "attack": 144,
+           "defense": 171,
+           "stamina": 240
+         },
+         "tags": [],
+         "fast_moves": [
+           "MUD_SHOT",
+           "METAL_CLAW"
+         ],
+         "charged_moves": [
+           "EARTHQUAKE",
+           "FLASH_CANNON",
+           "MUDDY_WATER",
+           "ROCK_SLIDE"
+         ],
+         "buddy_distance": 5,
+         "third_move_cost": 75000
+       },
+       "level": 27,
+       "ivs": {
+         "attack": 0,
+         "defense": 12,
+         "stamina": 15
+       },
+       "fast_move": {
+         "move_id": "MUD_SHOT",
+         "name": "Mud Shot Fast",
+         "move_type": "ground",
+         "is_fast": true,
+         "power": 3,
+         "energy": 0,
+         "energy_gain": 9,
+         "cooldown": 1000,
+         "buff": null,
+         "archetype": "None"
+       },
+       "charged_moves": [
+         {
+           "move_id": "ROCK_SLIDE",
+           "name": "Rock Slide",
+           "move_type": "rock",
+           "is_fast": false,
+           "power": 75,
+           "energy": 45,
+           "energy_gain": 0,
+           "cooldown": 500,
+           "buff": null,
+           "archetype": "None"
+         },
+         {
+           "move_id": "EARTHQUAKE",
+           "name": "Earthquake",
+           "move_type": "ground",
+           "is_fast": false,
+           "power": 110,
+           "energy": 65,
+           "energy_gain": 0,
+           "cooldown": 500,
+           "buff": null,
+           "archetype": "None"
+         }
+       ]
+     },
+     {
+       "pdex_mon": {
+         "dex_number": 308,
+         "species_name": "Medicham",
+         "species_id": "medicham",
+         "family": {
+           "family_id": "FAMILY_MEDITITE",
+           "parent": "MEDITITE",
+           "evolutions": []
+         },
+         "types": [
+           "fighting",
+           "psychic"
+         ],
+         "base_stats": {
+           "attack": 121,
+           "defense": 152,
+           "stamina": 155
+         },
+         "tags": [],
+         "fast_moves": [
+           "PSYCHO_CUT",
+           "COUNTER"
+         ],
+         "charged_moves": [
+           "ICE_PUNCH",
+           "PSYCHIC",
+           "DYNAMIC_PUNCH",
+           "POWER_UP_PUNCH"
+         ],
+         "buddy_distance": 3,
+         "third_move_cost": 50000
+       },
+       "level": 50,
+       "ivs": {
+         "attack": 5,
+         "defense": 15,
+         "stamina": 15
+       },
+       "fast_move": {
+         "move_id": "COUNTER",
+         "name": "Counter Fast",
+         "move_type": "fighting",
+         "is_fast": true,
+         "power": 8,
+         "energy": 0,
+         "energy_gain": 7,
+         "cooldown": 1000,
+         "buff": null,
+         "archetype": "None"
+       },
+       "charged_moves": [
+         {
+           "move_id": "ICE_PUNCH",
+           "name": "Ice Punch",
+           "move_type": "ice",
+           "is_fast": false,
+           "power": 55,
+           "energy": 40,
+           "energy_gain": 0,
+           "cooldown": 500,
+           "buff": null,
+           "archetype": "None"
+         },
+         {
+           "move_id": "DYNAMIC_PUNCH",
+           "name": "Dynamic Punch",
+           "move_type": "fighting",
+           "is_fast": false,
+           "power": 90,
+           "energy": 50,
+           "energy_gain": 0,
+           "cooldown": 500,
+           "buff": null,
+           "archetype": "None"
+         }
+       ]
+     }
+   ]
+ }

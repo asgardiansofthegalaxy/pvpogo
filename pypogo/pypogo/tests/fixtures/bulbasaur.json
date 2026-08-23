@@ -1,0 +1,33 @@
+{
+  "dex_number": 1,
+  "species_name": "Bulbasaur",
+  "species_id": "V0001_POKEMON_BULBASAUR",
+  "family": {
+    "family_id": "FAMILY_BULBASAUR",
+    "parent": null,
+    "evolutions": [
+      "IVYSAUR"
+    ]
+  },
+  "types": [
+    "grass",
+    "poison"
+  ],
+  "base_stats": {
+    "attack": 118,
+    "defense": 111,
+    "stamina": 128
+  },
+  "tags": [],
+  "fast_moves": [
+    "VINE_WHIP",
+    "TACKLE"
+  ],
+  "charged_moves": [
+    "SLUDGE_BOMB",
+    "SEED_BOMB",
+    "POWER_WHIP"
+  ],
+  "buddy_distance": 3,
+  "third_move_cost": 10000
+}

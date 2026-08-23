@@ -1,0 +1,40 @@
+{
+  "charged": [
+    {
+      "move_id": "SLUDGE_BOMB",
+      "name": "Sludge Bomb",
+      "move_type": "poison",
+      "is_fast": false,
+      "power": 80,
+      "energy": 0,
+      "energy_gain": 50,
+      "cooldown": 500,
+      "buff": null,
+      "archetype": "None"
+    },
+    {
+      "move_id": "POWER_WHIP",
+      "name": "Power Whip",
+      "move_type": "grass",
+      "is_fast": false,
+      "power": 90,
+      "energy": 0,
+      "energy_gain": 50,
+      "cooldown": 500,
+      "buff": null,
+      "archetype": "None"
+    }
+  ],
+  "fast": {
+    "move_id": "TACKLE",
+    "name": "Tackle Fast",
+    "move_type": "normal",
+    "is_fast": true,
+    "power": 3,
+    "energy": 3,
+    "energy_gain": 0,
+    "cooldown": 500,
+    "buff": null,
+    "archetype": "None"
+  }
+}

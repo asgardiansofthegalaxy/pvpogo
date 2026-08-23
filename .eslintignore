@@ -4,3 +4,7 @@ node_modules_old
 out
 dist
 build
+
+# Python backend: not JS, and its venv ships stray ESLint configs from
+# Jupyter lab extensions that break the lint run.
+pypogo

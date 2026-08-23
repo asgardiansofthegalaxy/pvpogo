@@ -1,0 +1,12 @@
+{
+  "move_id": "WRAP",
+  "name": "Wrap",
+  "move_type": "normal",
+  "is_fast": false,
+  "power": 60,
+  "energy": 0,
+  "energy_gain": 45,
+  "cooldown": 500,
+  "buff": null,
+  "archetype": "None"
+}

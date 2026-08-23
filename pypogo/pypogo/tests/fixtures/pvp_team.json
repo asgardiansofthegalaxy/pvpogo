@@ -1,0 +1,103 @@
+[
+  {
+    "dex_number": 3,
+    "species_name": "Venusaur",
+    "species_id": "V0003_POKEMON_VENUSAUR",
+    "family": {
+      "family_id": "FAMILY_BULBASAUR",
+      "parent": "IVYSAUR",
+      "evolutions": []
+    },
+    "types": [
+      "grass",
+      "poison"
+    ],
+    "base_stats": {
+      "attack": 198,
+      "defense": 189,
+      "stamina": 190
+    },
+    "tags": [],
+    "fast_moves": [
+      "RAZOR_LEAF",
+      "VINE_WHIP"
+    ],
+    "charged_moves": [
+      "SLUDGE_BOMB",
+      "PETAL_BLIZZARD",
+      "SOLAR_BEAM",
+      "FRENZY_PLANT"
+    ],
+    "buddy_distance": 3,
+    "third_move_cost": 10000
+  },
+  {
+    "dex_number": 6,
+    "species_name": "Charizard",
+    "species_id": "V0006_POKEMON_CHARIZARD",
+    "family": {
+      "family_id": "FAMILY_CHARMANDER",
+      "parent": "CHARMELEON",
+      "evolutions": []
+    },
+    "types": [
+      "fire",
+      "flying"
+    ],
+    "base_stats": {
+      "attack": 223,
+      "defense": 173,
+      "stamina": 186
+    },
+    "tags": [],
+    "fast_moves": [
+      "FIRE_SPIN",
+      "AIR_SLASH",
+      "EMBER",
+      "WING_ATTACK",
+      "DRAGON_BREATH"
+    ],
+    "charged_moves": [
+      "FIRE_BLAST",
+      "DRAGON_CLAW",
+      "OVERHEAT",
+      "BLAST_BURN",
+      "FLAMETHROWER"
+    ],
+    "buddy_distance": 3,
+    "third_move_cost": 10000
+  },
+  {
+    "dex_number": 9,
+    "species_name": "Blastoise",
+    "species_id": "V0009_POKEMON_BLASTOISE",
+    "family": {
+      "family_id": "FAMILY_SQUIRTLE",
+      "parent": "WARTORTLE",
+      "evolutions": []
+    },
+    "types": [
+      "water",
+      "none"
+    ],
+    "base_stats": {
+      "attack": 171,
+      "defense": 207,
+      "stamina": 188
+    },
+    "tags": [],
+    "fast_moves": [
+      "WATER_GUN",
+      "BITE"
+    ],
+    "charged_moves": [
+      "FLASH_CANNON",
+      "ICE_BEAM",
+      "HYDRO_PUMP",
+      "SKULL_BASH",
+      "HYDRO_CANNON"
+    ],
+    "buddy_distance": 3,
+    "third_move_cost": 10000
+  }
+]
