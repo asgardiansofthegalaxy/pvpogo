@@ -73,10 +73,31 @@ python3 -m pytest pypogo/tests/test_battle.py          # single file
 python3 -m pytest pypogo/tests/test_battle.py::PvpBattleTests::test_simulate_battle # single test
 python3 pypogo/scripts/battle_demo.py                  # one 3v3 battle, dumps history to a txt file
 python3 pypogo/scripts/simulation_demo.py              # round-robin over all 3-of-6 team combos
+python3 pypogo/scripts/build_matchups.py              # rebuild the precomputed matchup matrices (~15 min)
+python3 pypogo/scripts/build_matchups.py --check      # verify no drift -- same cost, so run it by hand
 ```
 
-The suite is green (108 tests). Results are deterministic, so a diff in the roster-performance numbers
-means real behaviour changed, not flake.
+Results are deterministic, so a diff in the roster-performance numbers means real behaviour changed,
+not flake. That is a property the code maintains deliberately, and it took two fixes to get right.
+
+A charge-move-priority tie -- both actives on the same attack stat -- is a coin flip in the live
+game, and `PvpBattle._break_attack_tie` is where that is modelled:
+
+1. It used to call `random.seed(time.time())` on the **global** RNG for every tie, so the same mirror
+   match rated 481 or 518 depending on when it ran, ties inside one clock tick were correlated rather
+   than independent, and the global stream `PvPokeAI` draws its energy guesses from got reset
+   underneath it.
+2. Seeding per *battle* fixed reproducibility but not correctness: whoever was player one won every
+   tie in that battle, so A beat B *and* B beat A -- 21 of Great League's 4,950 meta pairs, by up to
+   96 rating points.
+
+The flip is now seeded from the **pair**, so two Pokemon resolve ties the same way whichever side
+they sit on and `rating(a vs b) + rating(b vs a)` comes back to 1000. A true mirror has no pair to
+tell apart, so it alternates instead, which is what makes a species rate ~500 against a copy of
+itself rather than winning every collision. `cmp_seed=None` opts back into real unpredictability.
+
+`tests/test_determinism.py` guards all of it. Without it, every precomputed artefact in the repo is a
+coin toss and `--check` drift gates are meaningless.
 
 Django app (`pypogo/pokexperience/`) expects a local MySQL database named `pvpogo`; credentials are
 hardcoded in `pokexperience/pokexperience/settings.py`.
@@ -147,6 +168,35 @@ exists to avoid.
 species and Smeargle -- rather than returning a 10 HP combatant with a nonsense CP. Those gaps are
 pinned in `tests/test_dataset_invariants.py` so they cannot grow unnoticed.
 
+### Precomputed matchups
+
+`matchups.{great,ultra,master}.json` sit beside the dataset and are the answer to "how does this pick
+fare against what it will face", computed offline so the website needs no Python service. Each file
+holds a derived meta (~100 species), the build every rating assumes, and a row for *every* battle-
+distinct species against that meta. Rebuild with `scripts/build_matchups.py`; `--check` verifies no
+drift, but costs a full rebuild (~15 minutes across the three leagues), so it is a deliberate step
+rather than part of the gate -- CI's budget is 20 minutes for everything. What the gate *does* cover
+is `tests/test_matchup_invariants.py`: shape, referential integrity against the dataset, and two
+properties that only hold if the simulation is sound -- a mirror match rates ~500, and
+`rating(a vs b) + rating(b vs a) == 1000`.
+
+`meta.py` derives them in three stages, each cheap enough to afford the next: rank by stat product
+under the cap (arithmetic), simulate the top candidates against a panel drawn from their own top end
+(this is what drops the bulky-but-toothless picks stat product loves), then re-pick the survivors'
+movesets by brute-force simulation, because those builds are the columns everything else is measured
+against.
+
+**The meta is derived, not curated.** Nothing in the Game Master says what people actually play, and
+this project has no usage data, so "meta" here means "measurably beats other strong picks under the
+cap". It knows nothing about usage, coverage or team roles. `assumptions.meta_selection` in each file
+records how it was derived.
+
+`movesets.py` picks a species' moveset without simulating, which is what makes the ~1,100 non-meta
+rows affordable. The dataset lists moves in export order, not by quality -- Azumarill's first fast
+move is Rock Smash -- and building on that order costs ~47 rating points on average and 168 at worst.
+The heuristic gives up ~11. Both figures are measured against brute force in `tests/test_movesets.py`,
+so changing the scoring means arguing with a number.
+
 ### AI layer — the extension point
 
 `AInterface` (`ai/interface.py`) is the ABC every AI implements: `select_team`, `decide_action`,
@@ -191,6 +241,10 @@ JSON. It duplicates rather than imports the `pypogo` dataclasses; the two will d
 - **`gm_latest.json` is untracked now, but remains in earlier commits.** The engine no longer reads
   it and it is gitignored, yet history still holds an 11 MB copy of Niantic's export. Removing it
   properly needs `git filter-repo` before this repo is ever public. Tracked in DISCLAIMER.md.
+- **The engine assumes two charged moves in places.** 61 species declare only one, and
+  `AInterface.is_valid_action` used to index `charged_moves[1]` unconditionally, so any battle
+  involving Caterpie, Iron Hands or Flutter Mane crashed. It now returns "not a legal action"
+  instead. Anything else indexing a move slot needs the same care.
 - **Anything defining `__eq__` needs `__hash__` with it.** Python sets `__hash__ = None` when you
   define `__eq__`, silently making instances unusable as dict keys or set members. `BattlePhase`,
   `PvpAction`, `AIStatus`, `PokedexEntry`, and `StatsCombo` all hit this and are now fixed; keep the

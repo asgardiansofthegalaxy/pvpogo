@@ -11,7 +11,7 @@
  * Reads JSON only, so it needs no Python toolchain.
  */
 
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -43,6 +43,70 @@ function readCpMultipliers() {
 
   if (values.some(Number.isNaN)) throw new Error("CP_MULTIPLIER has a non-numeric entry");
   return values;
+}
+
+/** Leagues that ship a precomputed matchup file. Mirrors LEAGUE_KEYS in meta.py. */
+const LEAGUES = ["great", "ultra", "master"];
+
+/**
+ * Matchups per species kept for the browser.
+ *
+ * The engine file holds a full row -- every species against all ~100 meta
+ * picks -- which is ~500 KB a league and more than the UI reads. The team
+ * builder shows a pick's best and worst matchups, so ship those plus a mean,
+ * and leave the full matrix in the engine for team-level analysis to pick up
+ * when it needs it.
+ */
+const KEPT_MATCHUPS = 6;
+
+function trimMatchups(league) {
+  const path = join(ENGINE_DATA, `matchups.${league}.json`);
+  if (!existsSync(path)) {
+    throw new Error(
+      `Missing ${path}. Regenerate it with:\n` +
+        `  cd pypogo && python3 pypogo/scripts/build_matchups.py --league ${league}`
+    );
+  }
+  const raw = JSON.parse(readFileSync(path, "utf8"));
+
+  const best = {};
+  const worst = {};
+  const score = {};
+
+  for (const [speciesId, ratings] of Object.entries(raw.ratings)) {
+    // A species' own column rates ~500 by construction and says nothing, so
+    // it is dropped rather than shown as a middling matchup against itself.
+    const ranked = ratings
+      .map((rating, index) => [index, rating])
+      .filter(([index]) => raw.meta[index].id !== speciesId)
+      .sort((a, b) => b[1] - a[1]);
+
+    if (ranked.length === 0) continue;
+
+    best[speciesId] = ranked.slice(0, KEPT_MATCHUPS);
+    worst[speciesId] = ranked.slice(-KEPT_MATCHUPS).reverse();
+    score[speciesId] = Math.round(
+      ranked.reduce((sum, [, rating]) => sum + rating, 0) / ranked.length
+    );
+  }
+
+  return {
+    league: raw.league,
+    cap: raw.cap,
+    assumptions: raw.assumptions,
+    meta: raw.meta.map(({ id, cp, level, fast, charged }) => ({
+      id,
+      cp,
+      level,
+      fast,
+      charged,
+    })),
+    builds: raw.builds,
+    best,
+    worst,
+    score,
+    aliases: raw.aliases,
+  };
 }
 
 const rawSpecies = readJson("pokemon.json");
@@ -111,9 +175,17 @@ writeFileSync(join(OUT_DIR, "cp-multipliers.json"), JSON.stringify(cpMultipliers
 const kb = (name) =>
   Math.round(readFileSync(join(OUT_DIR, name), "utf8").length / 1024);
 
+const matchupSummary = LEAGUES.map((league) => {
+  const trimmed = trimMatchups(league);
+  const name = `matchups.${league}.json`;
+  writeFileSync(join(OUT_DIR, name), JSON.stringify(trimmed));
+  return `${name}  ${trimmed.meta.length} meta, ${Object.keys(trimmed.best).length} species (${kb(name)} KB)`;
+}).join("\n");
+
 console.log(
   `species.json  ${species.length} entries (${kb("species.json")} KB)\n` +
     `moves.json    ${Object.keys(moves).length} entries (${kb("moves.json")} KB)\n` +
     `cp-multipliers.json  ${cpMultipliers.length} levels\n` +
+    `${matchupSummary}\n` +
     `skipped ${skipped.length} unusable species: ${skipped.join(", ")}`
 );

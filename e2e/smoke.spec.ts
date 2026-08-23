@@ -120,6 +120,60 @@ test.describe("team builder", () => {
     await expect.poll(cpOf).toBeGreaterThan(greatCp);
     expect(await cpOf()).toBeLessThanOrEqual(2500);
   });
+
+  test("shows precomputed matchups against the meta", async ({ page }) => {
+    await page.getByPlaceholder("Search Pokémon...").fill("azumarill");
+    await page.getByRole("button", { name: /Add Azumarill/ }).click();
+
+    // Scope to the team panel: the picker renders list items too, and its
+    // Azumarill entry comes first in the DOM.
+    const team = page.getByRole("region", { name: "Your team" });
+    const slot = team.getByRole("listitem").filter({ hasText: "Azumarill" }).first();
+    await expect(
+      slot.getByRole("heading", { name: "Against the meta" })
+    ).toBeVisible();
+
+    // Two lists -- what it beats and what it loses to -- three rows each.
+    await expect(slot.getByRole("list")).toHaveCount(2);
+    await expect(slot.getByRole("list").first().getByRole("listitem")).toHaveCount(3);
+    await expect(slot.getByRole("list").last().getByRole("listitem")).toHaveCount(3);
+
+    // Best matchups must actually be better than the worst ones.
+    const ratings = await slot.getByRole("listitem").locator("span.tabular-nums").allInnerTexts();
+    const numbers = ratings.map(Number).filter((n) => !Number.isNaN(n));
+    expect(numbers.length).toBeGreaterThanOrEqual(6);
+    expect(Math.max(...numbers.slice(0, 3))).toBeGreaterThan(
+      Math.min(...numbers.slice(-3))
+    );
+  });
+
+  test("matchups come from a static file, not a server", async ({ page }) => {
+    const dataRequests: string[] = [];
+    page.on("request", (request) => {
+      const url = new URL(request.url());
+      if (url.pathname.startsWith("/data/")) dataRequests.push(url.pathname);
+      // Anything that looks like a live simulator would defeat the point.
+      expect(url.pathname).not.toMatch(/^\/api\//);
+    });
+
+    await gotoTeamBuilder(page);
+    await page.getByPlaceholder("Search Pokémon...").fill("azumarill");
+    await page.getByRole("button", { name: /Add Azumarill/ }).click();
+    await expect(page.getByRole("heading", { name: "Against the meta" })).toBeVisible();
+
+    expect(dataRequests).toContain("/data/matchups.great.json");
+  });
+
+  test("switching league loads that league's matchups", async ({ page }) => {
+    await page.getByPlaceholder("Search Pokémon...").fill("registeel");
+    await page.getByRole("button", { name: /Add Registeel/ }).click();
+    await expect(page.getByRole("heading", { name: "Against the meta" })).toBeVisible();
+
+    await page.getByRole("tab", { name: /Ultra League/ }).click();
+
+    // The panel comes back once the Ultra file has loaded.
+    await expect(page.getByRole("heading", { name: "Against the meta" })).toBeVisible();
+  });
 });
 
 test.describe("IP hygiene", () => {

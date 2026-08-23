@@ -2,8 +2,10 @@
 
 import { Select, SelectItem, Slider } from "@heroui/react";
 
+import MatchupPanel from "@/app/components/MatchupPanel";
 import SpeciesAvatar from "@/app/components/SpeciesAvatar";
 import { BoltIcon, CloseIcon, ShieldIcon } from "@/app/components/Icon";
+import type { SpeciesMatchups } from "@/app/lib/matchups";
 import { typeChipClass } from "@/app/lib/types";
 import {
   MAX_IV,
@@ -32,6 +34,9 @@ interface Props {
   moves: MoveTable;
   cpMultipliers: number[];
   cap: number;
+  speciesById: Map<string, Species>;
+  /** Precomputed ratings for this pick, or null while the league file loads. */
+  matchups: SpeciesMatchups | null;
   onChange: (member: TeamMember) => void;
   onRemove: () => void;
 }
@@ -42,6 +47,8 @@ export default function TeamSlot({
   moves,
   cpMultipliers,
   cap,
+  speciesById,
+  matchups,
   onChange,
   onRemove,
 }: Props) {
@@ -197,6 +204,16 @@ export default function TeamSlot({
           <Stat label="Stat product" value={statProduct(effective).toLocaleString()} />
         </dl>
       </div>
+
+      {matchups && (
+        <MatchupPanel
+          matchups={matchups}
+          speciesById={speciesById}
+          moves={moves}
+          fastMoveId={member.fastMoveId}
+          chargedMoveIds={member.chargedMoveIds}
+        />
+      )}
     </li>
   );
 }

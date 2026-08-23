@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import SpeciesPicker from "@/app/components/SpeciesPicker";
 import TeamSlot, { type TeamMember } from "@/app/components/TeamSlot";
+import { loadMatchups, matchupsFor, type MatchupData } from "@/app/lib/matchups";
 import {
   LEAGUES,
   TEAM_SIZE,
@@ -23,6 +24,7 @@ export default function TeamBuilder() {
   const [error, setError] = useState<string | null>(null);
   const [league, setLeague] = useState<LeagueKey>("great");
   const [team, setTeam] = useState<TeamMember[]>([]);
+  const [matchups, setMatchups] = useState<MatchupData | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -37,6 +39,23 @@ export default function TeamBuilder() {
       live = false;
     };
   }, []);
+
+  // Matchup ratings are league-specific, so clear them while the new league's
+  // file loads rather than showing Great League numbers under an Ultra tab.
+  useEffect(() => {
+    let live = true;
+    setMatchups(null);
+    loadMatchups(league)
+      .then((d) => {
+        if (live) setMatchups(d);
+      })
+      .catch(() => {
+        // Matchups are an enhancement; the builder still works without them.
+      });
+    return () => {
+      live = false;
+    };
+  }, [league]);
 
   const cap = LEAGUES[league].cap;
 
@@ -56,6 +75,10 @@ export default function TeamBuilder() {
   }, [cap, data]);
 
   const chosenIds = useMemo(() => team.map((m) => m.species.id), [team]);
+  const speciesById = useMemo(
+    () => new Map((data?.species ?? []).map((s) => [s.id, s])),
+    [data]
+  );
   const full = team.length >= TEAM_SIZE;
 
   function addSpecies(species: Species) {
@@ -163,6 +186,12 @@ export default function TeamBuilder() {
                     moves={data.moves}
                     cpMultipliers={data.cpMultipliers}
                     cap={cap}
+                    speciesById={speciesById}
+                    matchups={
+                      matchups && member
+                        ? matchupsFor(matchups, member.species.id)
+                        : null
+                    }
                     onChange={(next) =>
                       setTeam((current) =>
                         current.map((m) =>

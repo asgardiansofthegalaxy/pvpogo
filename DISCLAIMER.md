@@ -25,6 +25,13 @@ typings, move pools, and move power/energy/duration values. These are
 measurements of how a published game behaves. They are stored in this
 project's own schema, not in the publisher's file format.
 
+`matchups.great.json`, `matchups.ultra.json` and `matchups.master.json` are a
+step further removed: they hold no publisher data at all, only the *output of
+this project's own simulator* — a battle rating this repo's engine computed for
+each pair of Pokémon. They are original analysis, in the same sense a review's
+benchmark numbers are the reviewer's, and they are regenerated from the derived
+dataset by `pypogo/scripts/build_matchups.py`.
+
 ### Not distributed — publisher assets
 
 | Asset | Why not |
@@ -43,6 +50,15 @@ export and run:
 cd pypogo
 python3 pypogo/scripts/build_dataset.py --raw /path/to/game_master.json
 python3 pypogo/scripts/build_dataset.py --raw /path/to/game_master.json --check   # drift check
+```
+
+The precomputed matchup files rebuild from the derived dataset alone, with no
+raw export needed:
+
+```bash
+cd pypogo
+python3 pypogo/scripts/build_matchups.py           # ~5 minutes a league
+python3 pypogo/scripts/build_matchups.py --check   # drift check
 ```
 
 The engine never reads the raw export at runtime — only the derived dataset.

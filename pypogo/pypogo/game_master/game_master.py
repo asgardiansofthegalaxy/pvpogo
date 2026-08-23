@@ -67,6 +67,16 @@ class GameMaster:
             raw = json.load(fp)
         return {sid: PokedexEntry.from_dict(entry) for sid, entry in raw.items()}
 
+    @property
+    def moves(self) -> Dict[str, Move]:
+        """The move table, keyed by move_id. Read-only view of the dataset."""
+        return self._moves
+
+    @property
+    def pokedex(self) -> Dict[str, PokedexEntry]:
+        """Every species in the dataset, keyed by species_id."""
+        return self._pokedex_pokemon
+
     def list_pokemon(self, league=None):
         raise NotImplementedError
 
