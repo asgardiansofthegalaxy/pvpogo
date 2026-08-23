@@ -26,6 +26,9 @@ species.
 > Earlier revisions of this file said to replace everything with original species and move data.
 > That was wrong — the project is meant to be about real Pokémon.
 
+**Starting a fresh session?** Read `HANDOFF.md` — it carries the current state, the
+prioritised next actions, and the traps worth not rediscovering.
+
 ## The gate
 
 `npm run verify` (eslint, tsc, ruff, mypy, pytest -- ~15s) is the single source of
