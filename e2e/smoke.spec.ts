@@ -89,3 +89,34 @@ test.describe("team builder", () => {
     await expect(page.getByText("6/6 Pokemon selected")).toBeVisible();
   });
 });
+
+test.describe("IP hygiene", () => {
+  test("no publisher artwork is requested", async ({ page }) => {
+    // The species mark is drawn by SpeciesAvatar, not fetched. If a sprite host
+    // ever creeps back into the UI, this catches it at runtime rather than
+    // relying on a source grep alone.
+    const assetRequests: string[] = [];
+    page.on("request", (req) => {
+      const url = req.url();
+      if (/pokeapi|pokemondb|serebii|assets\.pokemon\.com|projectpokemon/i.test(url)) {
+        assetRequests.push(url);
+      }
+    });
+
+    await page.goto("/team");
+    await page.getByPlaceholder("Search Pokemon...").fill("bulbasaur");
+    await page.getByText("Bulbasaur", { exact: true }).click();
+    await page.waitForLoadState("networkidle");
+
+    expect(assetRequests, `publisher asset requests: ${assetRequests.join(", ")}`).toEqual([]);
+  });
+
+  test("the affiliation disclaimer is visible on every page", async ({ page }) => {
+    for (const route of ["/", "/team"]) {
+      await page.goto(route);
+      await expect(
+        page.getByText(/Not affiliated with, endorsed by, or sponsored by/i)
+      ).toBeVisible();
+    }
+  });
+});

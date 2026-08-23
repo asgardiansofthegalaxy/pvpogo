@@ -10,10 +10,11 @@ import {
   Badge,
   Input,
   Selection,
-  Avatar,
   ScrollShadow,
 } from "@heroui/react";
 import { Pokemon } from "./types";
+import SpeciesAvatar from "@/app/components/SpeciesAvatar";
+import { TYPE_COLORS } from "@/app/lib/types";
 
 const POKEMON_LIST: Pokemon[] = [
   { id: "bulbasaur", name: "Bulbasaur", types: ["Grass", "Poison"], dex: 1 },
@@ -154,27 +155,6 @@ const POKEMON_LIST: Pokemon[] = [
   { id: "mew", name: "Mew", types: ["Psychic"], dex: 151 },
 ];
 
-const TYPE_COLORS: Record<string, string> = {
-  Normal: "bg-gray-400",
-  Fire: "bg-orange-500",
-  Water: "bg-blue-500",
-  Electric: "bg-yellow-500",
-  Grass: "bg-green-500",
-  Ice: "bg-cyan-300",
-  Fighting: "bg-red-700",
-  Poison: "bg-purple-500",
-  Ground: "bg-amber-600",
-  Flying: "bg-indigo-400",
-  Psychic: "bg-pink-500",
-  Bug: "bg-lime-500",
-  Rock: "bg-stone-500",
-  Ghost: "bg-purple-800",
-  Dragon: "bg-indigo-700",
-  Dark: "bg-gray-800",
-  Steel: "bg-slate-400",
-  Fairy: "bg-pink-300",
-};
-
 export default function TeamBuilder() {
   const [selectedTeam, setSelectedTeam] = useState<Pokemon[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -241,10 +221,11 @@ export default function TeamBuilder() {
                     >
                       <CardBody className="p-3">
                         <div className="flex flex-col items-center">
-                          <Avatar
-                            src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.dex}.png`}
-                            alt={pokemon.name}
-                            className="w-16 h-16 mb-2"
+                          <SpeciesAvatar
+                            name={pokemon.name}
+                            types={pokemon.types}
+                            size="lg"
+                            className="mb-2"
                           />
                           <p className="text-white text-sm font-medium text-center">
                             {pokemon.name}
@@ -306,11 +287,7 @@ export default function TeamBuilder() {
                         <span className="text-teal-300 font-bold w-6">
                           {index + 1}
                         </span>
-                        <Avatar
-                          src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.dex}.png`}
-                          alt={pokemon.name}
-                          className="w-12 h-12"
-                        />
+                        <SpeciesAvatar name={pokemon.name} types={pokemon.types} size="md" />
                         <div className="flex-1">
                           <p className="text-white font-medium">
                             {pokemon.name}

@@ -13,6 +13,15 @@ from pypogo.stats import Stats
 
 CWD = os.path.dirname(os.path.abspath(__file__))
 
+# The derived, factual dataset the engine actually runs on: base stats, typings,
+# move pools and move values. Facts about how the live game behaves.
+POKEDEX_FILE = "pokemon.json"
+MOVES_FILE = "moves.json"
+
+# Niantic's raw export. A build input for regenerating the two files above, and
+# intentionally not committed or redistributed.
+RAW_GAME_MASTER_FILE = "gm_latest.json"
+
 
 MOVE_PATTERN = r"COMBAT_V\d{4}_MOVE_([A-Z_]+?)(?:_FAST)?$"
 POKEMON_PATTERN = r"V\d+_POKEMON_(PORYGON2|PIKACHU|[A-Z]+(?:_(?!NORMAL$|COPY_|FALL_|ADVENTURE_HAT_|FLYING_|COSTUME_|GOFEST_|GOTOUR_|JEJU|KARIYUSHI|POP_STAR|ROCK_STAR|SUMMER_|TSHIRT_|VS_|WCS_|WINTER_)[A-Z]+)?)$"
@@ -34,11 +43,29 @@ class GameMaster:
 
     def __init__(self):
         if not self.__initialized:
-            gm_data = self._load_gm_data()
-            grouped_keys = self._get_grouped_keys(gm_data)
-            self._moves = self._load_moves(grouped_keys["move"])
-            self._pokedex_pokemon = self._load_pokedex_pokemon(grouped_keys["pokemon"])
+            self._moves = self._read_moves()
+            self._pokedex_pokemon = self._read_pokedex()
             self.__initialized = True
+
+    @staticmethod
+    def _read_moves() -> Dict[str, Move]:
+        """
+        Load moves from the derived dataset, re-keyed by move_id.
+
+        moves.json is keyed by display name (fast moves carry a " Fast" suffix
+        to disambiguate same-named charged moves); the engine looks moves up by
+        move_id, which is collision-free across all 284 entries.
+        """
+        with open(os.path.join(CWD, MOVES_FILE), "r") as fp:
+            raw = json.load(fp)
+        return {entry["move_id"]: Move.from_dict(entry) for entry in raw.values()}
+
+    @staticmethod
+    def _read_pokedex() -> Dict[str, PokedexEntry]:
+        """Load species from the derived dataset, keyed by species_id."""
+        with open(os.path.join(CWD, POKEDEX_FILE), "r") as fp:
+            raw = json.load(fp)
+        return {sid: PokedexEntry.from_dict(entry) for sid, entry in raw.items()}
 
     def list_pokemon(self, league=None):
         raise NotImplementedError
@@ -52,6 +79,24 @@ class GameMaster:
         ivs: Stats = Stats(MAX_IV, MAX_IV, MAX_IV),
     ) -> PvpPokemon:
         pokedex_entry = self._pokedex_pokemon[species_id]
+
+        # A few species are in the export without usable battle data: some were
+        # datamined before release and carry all-zero base stats, and Smeargle
+        # has no fixed move pool because its moveset comes from Sketch. Building
+        # them silently yields a 10 HP combatant with a nonsense CP, so refuse
+        # instead. See tests/test_dataset_invariants.py.
+        stats = pokedex_entry.base_stats
+        if not (stats.attack and stats.defense and stats.stamina):
+            raise ValueError(
+                f"{species_id!r} has no base stats in the dataset and cannot be "
+                "built; it is most likely not released yet."
+            )
+        if not pokedex_entry.fast_moves or not pokedex_entry.charged_moves:
+            raise ValueError(
+                f"{species_id!r} declares no usable moveset in the dataset and "
+                "cannot be built."
+            )
+
         if fast_move_id:
             fast_move = self._moves[fast_move_id]
         else:
@@ -82,11 +127,24 @@ class GameMaster:
         raise NotImplementedError
 
     @staticmethod
-    def _load_gm_data() -> dict:
-        with open(os.path.join(CWD, "gm_latest.json"), "r") as fp:
-            gm_data = json.load(fp)
+    def _load_gm_data(path: Optional[str] = None) -> dict:
+        """
+        Read a raw Game Master export.
 
-        return gm_data
+        Only the regeneration path (scripts/build_dataset.py) calls this. The
+        raw export is Niantic's own file and is deliberately not distributed
+        with this project -- see DISCLAIMER.md. Fetch it yourself to rebuild
+        the derived dataset.
+        """
+        path = path or os.path.join(CWD, RAW_GAME_MASTER_FILE)
+        if not os.path.exists(path):
+            raise FileNotFoundError(
+                f"No raw Game Master export at {path}. It is not distributed with "
+                "this project; see DISCLAIMER.md for how to supply one. Normal use "
+                "does not need it -- the engine reads the derived dataset."
+            )
+        with open(path, "r") as fp:
+            return json.load(fp)
 
     @staticmethod
     def _get_grouped_keys(gm_data: dict) -> dict:

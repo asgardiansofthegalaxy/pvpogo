@@ -7,13 +7,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 PvPogo is a PvP battle simulator and team builder in the spirit of pvpoke.com, being rebuilt around
 agentic AI / ML and a stronger UI/UX.
 
-**Hard constraint: ship nothing copyrighted by Pokémon.** The current code does *not* yet honor this —
-it is derived from Niantic's Game Master and is saturated with protected material: `gm_latest.json`
-(11 MB verbatim game data), `pokemon.json`, `moves.json`, species names and Pokédex numbers hardcoded
-in `app/team/page.tsx`, the 18 canonical types in `poketypes.py`, and Pokémon-named identifiers
-throughout. Treat all of it as legacy scaffolding to be replaced with original species/type/move data
-behind the same interfaces. When adding code, prefer generic domain vocabulary (`species`, `creature`,
-`element`) over the Pokémon-specific naming used by the existing modules.
+**This is a real Pokémon GO PvP tool, and it stays inside copyright limits.** It is not a
+de-branded clone — species names, base stats, typings and move values are the product. The line it
+holds is the one every established fan tool holds (pvpoke, Serebii, PokéBattler):
+
+- **Facts and mechanics are fine.** Base stats, typings, move power/energy/duration, damage and CP
+  formulas. Facts are not copyrightable and mechanics are not protected expression.
+- **Names are used nominatively** — only to identify the actual creatures and moves, never as
+  branding, and never implying endorsement.
+- **Publisher assets are not.** Sprites, models, artwork, logos, and Niantic's raw Game Master file
+  are all off-limits. The UI draws its own `SpeciesAvatar` mark instead of fetching sprites, and the
+  engine ships a *derived* dataset rather than redistributing the publisher's export.
+
+`DISCLAIMER.md` is the policy; `pypogo/tests/test_ip_hygiene.py` enforces it in the gate, so it
+cannot regress silently. Read the disclaimer before touching data loading or anything that renders a
+species.
+
+> Earlier revisions of this file said to replace everything with original species and move data.
+> That was wrong — the project is meant to be about real Pokémon.
 
 ## The gate
 
@@ -61,7 +72,7 @@ python3 pypogo/scripts/battle_demo.py                  # one 3v3 battle, dumps h
 python3 pypogo/scripts/simulation_demo.py              # round-robin over all 3-of-6 team combos
 ```
 
-The suite is green (84 tests). Results are deterministic, so a diff in the roster-performance numbers
+The suite is green (108 tests). Results are deterministic, so a diff in the roster-performance numbers
 means real behaviour changed, not flake.
 
 Django app (`pypogo/pokexperience/`) expects a local MySQL database named `pvpogo`; credentials are
@@ -119,11 +130,19 @@ so `.damage` is a resolved number.
 
 ### Data ingestion
 
-`GameMaster` (`game_master/game_master.py`) is a **singleton** that parses the 11 MB `gm_latest.json`
-on first construction, filtering keys with the regexes at the top of the file to skip costume and
-event variants. It is the factory for everything else: `GM.get_pokemon(species_id, fast_move_id,
-charged_move_ids, level, ivs)` returns a fully built `PvpPokemon`. Test fixtures instantiate it at
-module import, so importing `pypogo.tests.utils` costs a multi-second parse.
+`GameMaster` (`game_master/game_master.py`) is a **singleton** that loads the derived dataset --
+`pokemon.json` (1283 species) and `moves.json` (284 moves), ~940 KB of factual game data. It is the
+factory for everything else: `GM.get_pokemon(species_id, fast_move_id, charged_move_ids, level, ivs)`
+returns a fully built `PvpPokemon`. Loading costs ~0.04s.
+
+The raw Game Master export is **not** on the import path and is not committed. It is a build input
+for `scripts/build_dataset.py`, which regenerates the two derived files (`--check` verifies no
+drift). Keep it that way: redistributing the publisher's own export is the thing the data policy
+exists to avoid.
+
+`get_pokemon` refuses to build species with no base stats or no declared moveset -- three unreleased
+species and Smeargle -- rather than returning a 10 HP combatant with a nonsense CP. Those gaps are
+pinned in `tests/test_dataset_invariants.py` so they cannot grow unnoticed.
 
 ### AI layer — the extension point
 
@@ -166,10 +185,9 @@ JSON. It duplicates rather than imports the `pypogo` dataclasses; the two will d
 
 ## Repo-level gotchas
 
-- **`gm_latest.json` is 11 MB of verbatim Niantic Game Master data, now in git history.** It was
-  committed deliberately so the suite runs on a fresh clone. It is also exactly the material the
-  no-Pokémon-IP constraint targets, so the de-branding work has to rewrite it out of history, not just
-  delete the file.
+- **`gm_latest.json` is untracked now, but remains in earlier commits.** The engine no longer reads
+  it and it is gitignored, yet history still holds an 11 MB copy of Niantic's export. Removing it
+  properly needs `git filter-repo` before this repo is ever public. Tracked in DISCLAIMER.md.
 - **Anything defining `__eq__` needs `__hash__` with it.** Python sets `__hash__ = None` when you
   define `__eq__`, silently making instances unusable as dict keys or set members. `BattlePhase`,
   `PvpAction`, `AIStatus`, `PokedexEntry`, and `StatsCombo` all hit this and are now fixed; keep the

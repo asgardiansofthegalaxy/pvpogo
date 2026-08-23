@@ -47,6 +47,13 @@ db.sqlite3-journal
 # Generated demo output from pypogo/pypogo/scripts
 pypogo/pypogo/scripts/*.txt
 
+# Raw Game Master exports are Niantic's own files. They are a build input for
+# regenerating the derived dataset (see DISCLAIMER.md) and are never committed
+# or redistributed.
+gm_latest.json
+game_master_latest.json
+GAME_MASTER*.json
+
 # Editor / OS
 .vscode/*
 !.vscode/extensions.json

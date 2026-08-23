@@ -3,11 +3,11 @@
 A PvP battle simulator and team builder in the spirit of [pvpoke.com](https://pvpoke.com),
 being rebuilt around agentic AI, machine learning, and a stronger UI/UX.
 
-> **Constraint:** the project ships nothing copyrighted by Pokémon. The current
-> code does not yet honor this — it is derived from Niantic's Game Master and
-> carries protected species, type, and move data throughout. Treat that as
-> legacy scaffolding to be replaced with original data behind the same
-> interfaces. See `CLAUDE.md` for detail.
+> **Unofficial fan project.** Not affiliated with, endorsed by, or sponsored by
+> Nintendo, The Pokémon Company, Game Freak, Creatures Inc., or Niantic, Inc.
+> It distributes factual game data (base stats, typings, move values) and draws
+> its own species marks — no sprites, artwork, or publisher export files. See
+> [DISCLAIMER.md](DISCLAIMER.md), which is enforced by tests in the gate.
 
 ## Layout
 
@@ -79,6 +79,16 @@ Demo scripts:
 ```bash
 python3 pypogo/scripts/battle_demo.py       # one 3v3 battle, writes its history to a txt file
 python3 pypogo/scripts/simulation_demo.py   # round-robin over every 3-of-6 team combination
+```
+
+### Regenerating the dataset
+
+The engine reads a derived dataset (`pokemon.json`, `moves.json`). Niantic's raw
+export is a build input and is not distributed; supply your own to rebuild:
+
+```bash
+python3 pypogo/scripts/build_dataset.py --raw /path/to/game_master.json
+python3 pypogo/scripts/build_dataset.py --raw /path/to/game_master.json --check
 ```
 
 ### Battle AIs
