@@ -1,6 +1,6 @@
 # Handoff
 
-State as of the IV-optimiser work on branch `carlos/dev`. `main` is untouched
+State as of the AI-fitness work on branch `carlos/dev`. `main` is untouched
 at `3a4fe98`.
 
 ## Get running
@@ -15,7 +15,7 @@ npm run verify:all    # the above + production build + Playwright  (~75s)
 npm run dev
 ```
 
-Green baseline: **142 Python tests, 18 Playwright tests, ruff/mypy/tsc/eslint
+Green baseline: **149 Python tests, 18 Playwright tests, ruff/mypy/tsc/eslint
 clean.** If any of that is red on arrival, fix it before starting new work --
 the gate is only useful while it is trusted.
 
@@ -30,14 +30,67 @@ loads data or renders a species.
 | Data policy | Derived dataset only; no publisher artwork, no raw Game Master export. Enforced by `test_ip_hygiene.py` |
 | Dataset validator | `test_dataset_invariants.py` -- referential integrity, stat ranges, known gaps pinned |
 | Battle engine | Turn-based phase machine, damage/CP formulas match the live game's behaviour. **Now genuinely deterministic** -- see below |
-| Battle AI | `NaiveAI` and `PvPokeAI` (4 tiers, graded 7/14/13/20 of 20 vs naive) |
+| Battle AI | `NaiveAI` and `PvPokeAI` (4 tiers). Now reproducible, and graded by `ai/fitness.py` rather than by win counts |
 | Move ranking | `movesets.py` picks a species' moveset without simulating; measured against brute force in `test_movesets.py`. Exported as `movesets.json` and used for the website's move order and defaults |
 | Meta + matchups | `meta.py` derives each league's meta and a full matchup matrix; shipped as `matchups.{great,ultra,master}.json` |
 | Website | Team builder on the real 1270-species dataset, showing each pick's best and worst matchups against its league meta and what the team as a whole has no answer to. A fresh pick starts on the moveset those matchups were simulated with |
 
 ## Recent changes
 
-### This session: the IV optimiser
+### This session: a fitness function for the AI
+
+`ai/fitness.py` scores an AI against a reference over a fixed suite of 3v3
+matchups drawn from a league's committed meta. **500 means indistinguishable
+from the reference**, and that anchor is exact, not approximate: each pairing is
+played twice with *both* the team and the seat swapped, so the two AIs hold
+every advantage equally. `scripts/ai_fitness.py` prints the table; the gate
+asserts the anchor, reproducibility, and the margin over naive.
+
+Getting there turned up three things.
+
+**`PvPokeAI` was not reproducible.** It weighs shield calls, switch targets and
+overfarming by chance and drew them from the **global** RNG -- the same bug
+class `_break_attack_tie` had before the determinism work. The same suite
+scored 30 rating points apart run to run, which is more than separates the four
+tiers, so every AI comparison this project has ever made was reading noise. It
+now has a per-instance stream seeded from `DEFAULT_AI_SEED` mixed with its
+roster, with `seed=None` as the opt-out. The committed matchup matrices are
+unaffected -- nothing on that path uses `PvPokeAI` -- and that was spot-checked
+against the shipped ratings rather than assumed.
+
+**A 1v1 suite cannot grade this AI.** The first version scored every tier within
+a point of naive. In a 1v1 there is nothing to switch to, so `decide_switch`
+never runs and the suite measures only the half of the AI that shields. 3v3 is
+the format the AI is written for.
+
+**Seat one is worth ~4 rating points in a 3v3.** With identical AIs on both
+sides a 3v3 is not quite seating-independent, so a benchmark that always seated
+the AI under test first scored it 504 against a copy of itself. Small next to
+the ~50-point AI signal, and exactly the sort of constant offset that makes a
+benchmark lie about small improvements. Swapping the seat is what makes the
+anchor land on 500.0 exactly.
+
+The headline result, over 28 pairings with a standard error of ~7:
+
+| AI | edge over naive |
+| --- | --- |
+| NOVICE | +49 |
+| RIVAL | +52 |
+| ELITE | +49 |
+| CHAMPION | +61 |
+
+Every tier clearly beats `NaiveAI`. Almost none of them clearly beats another.
+That is the dormant-`Strategy` gap, finally measured: the archetypes differ
+mostly in how they shield, and the old "NOVICE 7/20 → CHAMPION 20/20" grading
+was taken on the unseeded AI.
+
+One existing test had to change. `test_pvpoke_ai_can_drive_a_full_battle_at_every_level`
+asserted a non-`None` winner; ELITE now reaches a double KO on that fixture,
+which wipes both teams and is a legal outcome `get_battle_winner` reports as a
+tie. It asserts the battle finished instead. The `random.seed()` calls in those
+tests are gone too -- they only ever existed to tame the AI's global draws.
+
+### Before that: the IV optimiser
 
 `app/lib/ivs.ts` ranks all 4,096 spreads at their best level under the cap and
 the team slot gained a "Best IVs" button plus a live `Rank #N of 4,096` line.
@@ -61,7 +114,7 @@ level the way `buildMatches` covers moves, and the panel says "Simulated at
 0/15/15, level 23.5 — not your spread." Anything that changes a pick's spread
 needs to go through it.
 
-### Before that: team coverage
+### And before that: team coverage
 
 The per-pick panel said how one Pokémon fares. The team-level question -- which
 meta picks beat *all* of your picks -- is now answered too, as a scan down each
@@ -91,7 +144,7 @@ Two judgement calls worth knowing:
 Sanity numbers on Great League: Azumarill / Registeel / Medicham answers 96 of
 100; a single Azumarill answers 69; three worthless picks answer 0.
 
-### And before that: the builder's defaults
+### Earlier: the builder's defaults
 
 The team builder used to hand every fresh pick `species.fastMoves[0]` -- export
 order, which is not a ranking -- so it built the Rock Smash Azumarill the
@@ -154,11 +207,27 @@ or Flutter Mane raised `IndexError`. It now returns "not a legal action".
 
 ## Next actions, in order
 
-### 1. A fitness function for the AI, then the strategy state machine
+### 1. The strategy state machine
 
-Unchanged from before, and still the prerequisite for any AI tuning. The
-matchup matrix is now a plausible basis for the benchmark: a fixed set of
-matchups with known expected outcomes.
+Now unblocked: `ai/fitness.py` is the number to argue with, and it says the
+four tiers are within a standard error of each other. Implementing the
+switch/overfarm state machine is what should separate them, so this is the
+first AI change that can actually be shown to work.
+
+Two constraints the benchmark imposes. **Use `--teams 8` or wider** to judge
+it: the standard error is ~7 rating points at 28 pairings and ~11 at six, so a
+narrow suite cannot see a modest gain. And **the earlier naive attempt failed
+on hysteresis**, not on the idea -- re-evaluating every turn produced 2,087
+strategy transitions across 10 battles because CHAMPION's `reaction_time` is 0,
+and made it play worse than NOVICE. Expect to need a dwell time before a
+strategy can change again.
+
+### 2. Widen the fitness suite, if it is not sharp enough
+
+28 pairings gives a standard error of ~7 rating points at ~30s a run. If the
+state machine's effect is smaller than that, the suite needs more teams (cost
+is quadratic) or more shield configurations. Worth doing only once something
+needs the resolution.
 
 ## Known gaps and traps
 
@@ -186,10 +255,19 @@ matchups with known expected outcomes.
   numbers because shield baiting is not modelled. Implementing baiting would
   change every number in the matchup files.
 - **`PvPokeAI`'s strategy state machine is unimplemented.** Nothing selects a
-  non-`DEFAULT` `Strategy`. A naive re-evaluate-every-turn version made CHAMPION
-  play *worse* than NOVICE by thrashing (2,087 strategy transitions across 10
+  non-`DEFAULT` `Strategy`, which is why the four tiers grade within a standard
+  error of each other. A naive re-evaluate-every-turn version made CHAMPION play
+  *worse* than NOVICE by thrashing (2,087 strategy transitions across 10
   battles, because CHAMPION's `reaction_time` is 0). It needs real hysteresis.
-  **Do not tune the AI without a fitness function.**
+- **Anything in an AI that makes a random choice goes on `self._rng`.** Drawing
+  from the global `random` is how `PvPokeAI` became unreproducible, and it is
+  the second time this project has had that bug. `team_generation.py` still has
+  one such draw; it is off the battle path -- nothing calls `select_team` during
+  a battle -- so it does not affect play or the benchmark, but it is the last
+  one left.
+- **Do not pin a tier ordering in a test.** NOVICE through CHAMPION sit within
+  ~7 rating points of each other, so an ordering assertion would be pinning
+  noise. Pin the 500 anchor, reproducibility, and the margin over naive.
 - **`gm_latest.json` is still in git history.** Untracked and gitignored now, but
   earlier commits hold an 11 MB copy of Niantic's export. Needs `git filter-repo`
   **before this repo is ever public**.

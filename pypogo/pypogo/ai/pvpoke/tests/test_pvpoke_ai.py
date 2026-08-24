@@ -1,4 +1,3 @@
-import random
 from unittest import TestCase
 
 from pypogo.action import PvpAction
@@ -13,7 +12,6 @@ from pypogo.tests.utils import load_teams
 
 class PvPokeAITests(TestCase):
     def setUp(self):
-        random.seed(11)
         team_one, team_two = load_teams()
         self.player = Player(team=team_one, name="pvpoke")
         self.opponent = Player(team=team_two, name="naive")
@@ -121,7 +119,6 @@ class PvPokeAIBattleTests(TestCase):
     def test_pvpoke_ai_can_drive_a_full_battle_at_every_level(self):
         for level in AILevel:
             with self.subTest(level=level):
-                random.seed(5)
                 team_one, team_two = load_teams()
                 player = Player(team=team_one, name="pvpoke")
                 opponent = Player(team=team_two, name="naive")
@@ -133,10 +130,21 @@ class PvPokeAIBattleTests(TestCase):
 
                 self.assertGreater(turns, 0)
                 self.assertEqual(battle.phase, BattlePhase.GAME_OVER)
-                self.assertIsNotNone(battle.get_battle_winner())
+
+                # The point is that the AI drives the battle to a finish, not
+                # that it wins: a double KO wipes both teams and is a legal
+                # outcome, which `get_battle_winner` reports as a tie. ELITE
+                # reaches one on this fixture.
+                self.assertEqual(
+                    min(
+                        player.get_remaining_pokemon(),
+                        opponent.get_remaining_pokemon(),
+                    ),
+                    0,
+                    "a finished battle must have wiped at least one team",
+                )
 
     def test_pvpoke_ai_can_battle_another_pvpoke_ai(self):
-        random.seed(5)
         team_one, team_two = load_teams()
         player = Player(team=team_one, name="champion")
         opponent = Player(team=team_two, name="novice")

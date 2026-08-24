@@ -6,7 +6,7 @@ from pypogo.action import PvpAction
 from pypogo.ai.interface import AInterface, AIStatus
 from pypogo.ai.pvpoke.roster_analysis import RosterAnalyzer
 from pypogo.ai.pvpoke.team_generation import TeamGenerator
-from pypogo.constants import BattlePhase
+from pypogo.constants import DEFAULT_AI_SEED, BattlePhase
 from pypogo.moves import MoveKind, PvpMove
 from pypogo.player import Player
 from pypogo.pokemon import PvpPokemon
@@ -21,6 +21,14 @@ from .constants import (
     Strategy,
 )
 from .utils import choose_option
+
+
+def _ai_rng(seed, level: AILevel, roster) -> random.Random:
+    """This AI's own random stream, reproducible unless `seed` is None."""
+    if seed is None:
+        return random.Random()
+    members = tuple(str(mon) for mon in roster or ())
+    return random.Random(repr((seed, level.value, members)))
 
 # Order used whenever a heuristic produces nothing legal. Mirrors NaiveAI so a
 # PvPokeAI always has a legal move to fall back on and never stalls a battle.
@@ -41,11 +49,20 @@ class PvPokeAI(AInterface):
         player: Player,
         level: AILevel = AILevel.NOVICE,
         name: str = "PvPokeAI",
+        seed: Optional[int] = DEFAULT_AI_SEED,
     ):
         self.player = player
         self.name = name
         self.level = level
         self.archetype = AI_ARCHETYPES[self.level]
+        # This AI weighs several decisions by chance. Drawing them from the
+        # global RNG made a run unreproducible -- the same suite of battles
+        # scored 30 rating points apart, which is more than separates the
+        # tiers -- and let anything else seeding that stream perturb play. The
+        # seed is mixed with the roster so two AIs in one battle do not draw
+        # the same sequence, mirroring how PvpBattle seeds its tie-break from
+        # the pair. `seed=None` opts back into genuine unpredictability.
+        self._rng = _ai_rng(seed, level, getattr(player, "roster", None))
         self.previous_strategy: Optional[Strategy] = None
         self.current_strategy = Strategy.DEFAULT
         self.last_turn_evaluated = 0
@@ -100,7 +117,9 @@ class PvPokeAI(AInterface):
 
         # Generate a basic team based on random selection
         if selection_strategy == DecisionType.BASIC:
-            team = random.sample(player_roster, min(self.party_size, len(player_roster)))
+            team = self._rng.sample(
+                player_roster, min(self.party_size, len(player_roster))
+            )
 
         # Generate the best team available
         elif selection_strategy == DecisionType.BEST:
@@ -268,7 +287,10 @@ class PvPokeAI(AInterface):
                 overfarm_chance = -1
 
             # Perform overfarm
-            if overfarm_chance > 0 and math.floor(random.random() * overfarm_chance) > 0:
+            if (
+                overfarm_chance > 0
+                and math.floor(self._rng.random() * overfarm_chance) > 0
+            ):
                 action = PvpAction.FAST
 
         if action is None:
@@ -394,7 +416,7 @@ class PvPokeAI(AInterface):
             ):
                 switch_options = switch_options[:1]
 
-        switch_idx = choose_option(switch_options).value
+        switch_idx = choose_option(switch_options, self._rng).value
         return switch_idx
 
     def decide_shield(self) -> bool:
@@ -429,7 +451,8 @@ class PvPokeAI(AInterface):
         energy_guess_range = self.archetype.energy_guess_range
         estimated_energy = max(
             min_energy,
-            attacker.energy + (random.randint(-energy_guess_range, energy_guess_range)),
+            attacker.energy
+            + self._rng.randint(-energy_guess_range, energy_guess_range),
         )
 
         # The opponent's charged moves that can be used with the estimated energy
@@ -473,7 +496,7 @@ class PvPokeAI(AInterface):
                 options[0].weight += 20
             options.append(DecisionOption(i, move_weight))
 
-        guessed_move = possible_moves[choose_option(options).value]
+        guessed_move = possible_moves[choose_option(options, self._rng).value]
 
         # We've guessed the move, now let's analyze if we should shield like a player would
         yes_weight = 4 + ((3 - self.level.value) * 2)
@@ -572,7 +595,7 @@ class PvPokeAI(AInterface):
             DecisionOption(False, no_weight),
         ]
 
-        will_shield = choose_option(options).value
+        will_shield = choose_option(options, self._rng).value
 
         return will_shield
 

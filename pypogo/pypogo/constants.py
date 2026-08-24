@@ -242,6 +242,13 @@ class BattleEndCond(Enum):
 #: live game's genuine unpredictability.
 DEFAULT_CMP_SEED = 0
 
+#: Default seed for a battle AI's own RNG. `PvPokeAI` weighs several decisions
+#: by chance -- which shield call to make, whether to overfarm, how far off its
+#: guess at the opponent's energy is -- and drawing those from the global RNG
+#: made its results unreproducible, exactly as the charge-move tie above once
+#: was. Pass `seed=None` to opt back into genuine unpredictability.
+DEFAULT_AI_SEED = 0
+
 
 class CMPRule(Enum):
     CMP_IDEAL = 0

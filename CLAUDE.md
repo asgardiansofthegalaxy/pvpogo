@@ -77,6 +77,8 @@ python3 pypogo/scripts/build_matchups.py              # rebuild the precomputed 
 python3 pypogo/scripts/build_matchups.py --check      # verify no drift -- same cost, so run it by hand
 python3 pypogo/scripts/build_movesets.py              # rebuild the exported move ranking (<1s)
 python3 pypogo/scripts/build_movesets.py --check      # verify no drift -- also checked in the gate
+python3 pypogo/scripts/ai_fitness.py                  # grade every AI tier against NaiveAI (~7s)
+python3 pypogo/scripts/ai_fitness.py --teams 8        # a wider, slower, less noisy suite (~30s)
 ```
 
 Results are deterministic, so a diff in the roster-performance numbers means real behaviour changed,
@@ -251,6 +253,35 @@ Two implementations:
 
   `run_scenario` is memoised per-AI (`_scenario_cache`); each uncached call costs nine simulated
   battles, and the shield/switch heuristics ask about the same matchup repeatedly.
+
+  **`PvPokeAI` has its own RNG.** It weighs shield calls, switch targets and overfarming by chance,
+  and used to draw them from the **global** stream -- the same bug class `_break_attack_tie` had.
+  The same suite of battles scored 30 rating points apart run to run, which is more than separates
+  the four tiers, so no AI comparison meant anything. `PvPokeAI(player, level=..., seed=...)` now
+  seeds a per-instance stream, mixed with the roster so the two AIs in one battle do not draw the
+  same sequence; `seed=None` opts back into unpredictability. Anything new that makes a random
+  choice belongs on `self._rng`, not on `random`.
+
+### Grading an AI
+
+`ai/fitness.py` scores an AI against a reference over a fixed suite of 3v3 matchups drawn from a
+league's committed meta. **500 means indistinguishable from the reference**; the distance from 500 is
+the margin in rating points. That anchor is exact rather than approximate: each pairing is played
+twice with *both* the team and the seat swapped, so the two AIs hold every advantage equally and an
+AI scored against a copy of itself lands on 500.0 exactly. `tests/test_fitness.py` asserts that, and
+it is the check that catches a broken benchmark.
+
+Two things it settled, both of which contradict what this file used to say:
+
+- **The suite has to be 3v3.** In a 1v1 there is nothing to switch to, so `decide_switch` never runs
+  and all four tiers score within a point of each other.
+- **The tiers are not meaningfully separated.** Over 28 pairings: NOVICE +49, RIVAL +52, ELITE +49,
+  CHAMPION +61, against a standard error of ~7. Every tier clearly beats `NaiveAI`; almost none of
+  them clearly beats another. That is the measured form of the dormant-`Strategy` gap above -- the
+  archetypes differ mostly in how they shield, and the earlier "NOVICE 7/20 → CHAMPION 20/20"
+  grading was taken on the unseeded AI, so it was reading noise.
+
+Do not pin a tier ordering in a test; pin the anchor, reproducibility, and the margin over naive.
 
 `ai/pvpoke/roster_analysis.py` and `team_generation.py` *do* work and are the interesting prior art
 for the ML direction: `RosterAnalyzer.run_scenario` sweeps all 3×3 shield combinations, weights them
