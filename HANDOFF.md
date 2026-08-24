@@ -1,7 +1,7 @@
 # Handoff
 
-State as of the builder-defaults work on branch `carlos/dev`. `main` is
-untouched at `3a4fe98`.
+State as of the team-coverage work on branch `carlos/dev`. `main` is untouched
+at `3a4fe98`.
 
 ## Get running
 
@@ -15,7 +15,7 @@ npm run verify:all    # the above + production build + Playwright  (~75s)
 npm run dev
 ```
 
-Green baseline: **142 Python tests, 15 Playwright tests, ruff/mypy/tsc/eslint
+Green baseline: **142 Python tests, 17 Playwright tests, ruff/mypy/tsc/eslint
 clean.** If any of that is red on arrival, fix it before starting new work --
 the gate is only useful while it is trusted.
 
@@ -33,11 +33,41 @@ loads data or renders a species.
 | Battle AI | `NaiveAI` and `PvPokeAI` (4 tiers, graded 7/14/13/20 of 20 vs naive) |
 | Move ranking | `movesets.py` picks a species' moveset without simulating; measured against brute force in `test_movesets.py`. Exported as `movesets.json` and used for the website's move order and defaults |
 | Meta + matchups | `meta.py` derives each league's meta and a full matchup matrix; shipped as `matchups.{great,ultra,master}.json` |
-| Website | Team builder on the real 1270-species dataset, showing each pick's best and worst matchups against its league meta. A fresh pick starts on the moveset those matchups were simulated with |
+| Website | Team builder on the real 1270-species dataset, showing each pick's best and worst matchups against its league meta and what the team as a whole has no answer to. A fresh pick starts on the moveset those matchups were simulated with |
 
 ## Recent changes
 
-### This session: the builder's defaults
+### This session: team coverage
+
+The per-pick panel said how one Pokémon fares. The team-level question -- which
+meta picks beat *all* of your picks -- is now answered too, as a scan down each
+meta column for the member that does best against it. No simulation: the
+matrix already holds every 1v1 rating, so this is a lookup that updates as fast
+as the user can click.
+
+`build-web-data.mjs` now writes each league twice. The summary (best/worst few
+plus a mean) is unchanged and still loads with the page at 82 KB gzipped;
+`matchups.<league>.rows.json` carries the full matrix at 182 KB and is fetched
+only once there is a team to analyse, so browsing the roster never pays for it.
+The rows file repeats the meta ids in column order and `teamCoverage` refuses
+to run if they disagree with the summary -- lining a row up against the wrong
+opponent would be worse than showing nothing.
+
+Two judgement calls worth knowing:
+
+* **A mirror is not counted as the team's answer to itself.** Bringing
+  Azumarill does not make you covered against Azumarill: a mirror rates ~500
+  and lands within ~100 either way, so counting it would decide those rows on
+  noise. The rest of the team gets measured instead, and the row carries a
+  `mirror` chip so "Azumarill beats your whole team" reads as the real finding
+  it is rather than a bug.
+* **The threshold is a strict 500.** Even is not answered. A team that only
+  scrapes a draw against something has no answer to it.
+
+Sanity numbers on Great League: Azumarill / Registeel / Medicham answers 96 of
+100; a single Azumarill answers 69; three worthless picks answer 0.
+
+### Before that: the builder's defaults
 
 The team builder used to hand every fresh pick `species.fastMoves[0]` -- export
 order, which is not a ranking -- so it built the Rock Smash Azumarill the
@@ -66,7 +96,7 @@ the battle-usable ones, so the picker offered them and picking one produced a
 slot with no fast move at all. The check now uses the ranking's coverage, which
 is exactly the set the engine accepts -- hence 1270 species, not 1279.
 
-### Before that: the matchup matrix
+### And before that: the matchup matrix
 
 The website can now answer "how does this pick fare against what it will face",
 which is the question a team builder exists for. It does that with **no server**:
@@ -100,25 +130,13 @@ or Flutter Mane raised `IndexError`. It now returns "not a legal action".
 
 ## Next actions, in order
 
-### 1. Team-level matchup analysis
-
-The per-pick panel is in; the team-level answer is not. The engine files carry a
-**full row per species** (every species against all 100 meta picks), but
-`build-web-data.mjs` currently trims that to best/worst six plus a mean, because
-that is all the panel reads. Widening the export for the user's three picks is
-the whole job.
-
-Show coverage gaps: which meta picks beat *all three* of the team. That is the
-answer a team builder exists to give, and `RosterAnalyzer.calculate_roster_performance`'s
-logic becomes a client-side lookup over data that already exists.
-
-### 2. IV optimiser
+### 1. IV optimiser
 
 `StatsRanker.get_iv_rankings` exists in Python and is unreachable from the web.
 For one species under a CP cap this is ~4096 combinations x ~100 levels, fast
 enough client-side. Give the builder a "best IVs for this league" action.
 
-### 3. A fitness function for the AI, then the strategy state machine
+### 2. A fitness function for the AI, then the strategy state machine
 
 Unchanged from before, and still the prerequisite for any AI tuning. The
 matchup matrix is now a plausible basis for the benchmark: a fixed set of
@@ -167,6 +185,10 @@ matchups with known expected outcomes.
   placeholder view and duplicated models. Nothing depends on it.
 - **`public/data/` is generated, not committed.** `predev`/`prebuild` rebuild it
   from the engine dataset, `movesets.json` and the matchup files.
+- **Coverage is 1v1, not 3v3.** It answers "does anything on this team beat
+  that", which is the question worth asking while picking. It knows nothing
+  about switching, shield pressure across a match, or lead advantage. The panel
+  says so; do not let a future feature quietly imply otherwise.
 - **Switching league does not re-pick a team's movesets.** Level is re-capped,
   moves are left alone, because clobbering a choice the user made is worse than
   the alternative. 89 species have a different simulated build in Great and

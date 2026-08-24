@@ -4,12 +4,16 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 import SpeciesPicker from "@/app/components/SpeciesPicker";
+import TeamCoveragePanel from "@/app/components/TeamCoverage";
 import TeamSlot, { type TeamMember } from "@/app/components/TeamSlot";
 import {
   buildFor,
+  loadMatchupRows,
   loadMatchups,
   matchupsFor,
+  teamCoverage,
   type MatchupData,
+  type MatchupRows,
 } from "@/app/lib/matchups";
 import {
   LEAGUES,
@@ -30,6 +34,7 @@ export default function TeamBuilder() {
   const [league, setLeague] = useState<LeagueKey>("great");
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [matchups, setMatchups] = useState<MatchupData | null>(null);
+  const [rows, setRows] = useState<MatchupRows | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -62,6 +67,28 @@ export default function TeamBuilder() {
     };
   }, [league]);
 
+  // The full matrix is the larger half of the data and only the coverage panel
+  // reads it, so it is fetched once there is a team to analyse rather than on
+  // page load. Browsing the roster never pays for it.
+  const hasTeam = team.length > 0;
+
+  useEffect(() => {
+    setRows(null);
+    if (!hasTeam) return;
+
+    let live = true;
+    loadMatchupRows(league)
+      .then((d) => {
+        if (live) setRows(d);
+      })
+      .catch(() => {
+        // Coverage is an enhancement; the per-pick panels still work without it.
+      });
+    return () => {
+      live = false;
+    };
+  }, [league, hasTeam]);
+
   const cap = LEAGUES[league].cap;
 
   // Re-cap the team when the league changes: a Great League build is a
@@ -85,6 +112,14 @@ export default function TeamBuilder() {
     [data]
   );
   const full = team.length >= TEAM_SIZE;
+
+  const coverage = useMemo(
+    () =>
+      matchups && rows && chosenIds.length > 0
+        ? teamCoverage(matchups, rows, chosenIds)
+        : null,
+    [matchups, rows, chosenIds]
+  );
 
   /**
    * The moveset a fresh pick starts with.
@@ -231,6 +266,15 @@ export default function TeamBuilder() {
                   />
                 ))}
               </ul>
+
+              <div className="mt-3">
+                <TeamCoveragePanel
+                  coverage={coverage}
+                  speciesById={speciesById}
+                  picked={team.length}
+                  teamSize={TEAM_SIZE}
+                />
+              </div>
             </section>
           </div>
         )}

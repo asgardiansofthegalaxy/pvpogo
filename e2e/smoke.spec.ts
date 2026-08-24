@@ -177,6 +177,55 @@ test.describe("team builder", () => {
     );
   });
 
+  test("shows what the whole team has no answer to", async ({ page }) => {
+    const coverage = page.getByRole("region", { name: "Team coverage" });
+
+    // Nothing to analyse yet, so it says what it will do rather than showing
+    // an empty panel.
+    await expect(coverage).toContainText(/Pick a Pokémon/);
+
+    const search = page.getByPlaceholder("Search Pokémon...");
+    for (const name of ["Azumarill", "Registeel", "Medicham"]) {
+      await search.fill(name);
+      await page.getByRole("button", { name: new RegExp(`Add ${name}`) }).click();
+    }
+
+    // A recognisable Great League core answers most of the meta; the count is
+    // asserted as a range because the meta is derived, not curated, and moves
+    // when the matrix is rebuilt.
+    await expect(coverage).toContainText(/of 100 meta picks answered/);
+    const answered = Number(
+      (await coverage.innerText()).match(/(\d+)\s+of 100 meta picks answered/)?.[1]
+    );
+    expect(answered).toBeGreaterThan(80);
+    expect(answered).toBeLessThan(100);
+
+    // The gaps are the point: each names the meta pick and the team's best
+    // rating against it, which must be a losing one.
+    const gaps = coverage.getByRole("listitem");
+    expect(await gaps.count()).toBeGreaterThan(0);
+    const ratings = await gaps.locator("span.tabular-nums").allInnerTexts();
+    for (const rating of ratings) expect(Number(rating)).toBeLessThan(500);
+  });
+
+  test("the full matrix is fetched only once there is a team", async ({ page }) => {
+    const rowRequests: string[] = [];
+    page.on("request", (req) => {
+      if (/matchups\.\w+\.rows\.json/.test(req.url())) rowRequests.push(req.url());
+    });
+
+    // Browsing the roster must not pull the larger half of the data.
+    await page.getByPlaceholder("Search Pokémon...").fill("azumarill");
+    await expect(page.getByRole("button", { name: /Add Azumarill/ })).toBeVisible();
+    expect(rowRequests).toEqual([]);
+
+    await page.getByRole("button", { name: /Add Azumarill/ }).click();
+    await expect
+      .poll(() => rowRequests.length)
+      .toBeGreaterThan(0);
+    expect(rowRequests[0]).toContain("matchups.great.rows.json");
+  });
+
   test("matchups come from a static file, not a server", async ({ page }) => {
     const dataRequests: string[] = [];
     page.on("request", (request) => {

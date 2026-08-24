@@ -174,7 +174,11 @@ pinned in `tests/test_dataset_invariants.py` so they cannot grow unnoticed.
 ### Precomputed matchups
 
 `matchups.{great,ultra,master}.json` sit beside the dataset and are the answer to "how does this pick
-fare against what it will face", computed offline so the website needs no Python service. Each file
+fare against what it will face", computed offline so the website needs no Python service. The web
+export splits each one in two: a summary (best/worst few plus a mean, 82 KB gzipped) that loads with
+the page, and `matchups.<league>.rows.json` -- the full matrix, 182 KB gzipped -- which the team
+builder fetches only once there is a team to analyse. `teamCoverage` in `app/lib/matchups.ts` scans
+it for the meta picks no team member beats, which is a lookup rather than a simulation. Each file
 holds a derived meta (~100 species), the build every rating assumes, and a row for *every* battle-
 distinct species against that meta. Rebuild with `scripts/build_matchups.py`; `--check` verifies no
 drift, but costs a full rebuild (~15 minutes across the three leagues), so it is a deliberate step

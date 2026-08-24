@@ -49,17 +49,18 @@ function readCpMultipliers() {
 const LEAGUES = ["great", "ultra", "master"];
 
 /**
- * Matchups per species kept for the browser.
+ * Matchups per species kept in a league's summary file.
  *
  * The engine file holds a full row -- every species against all ~100 meta
- * picks -- which is ~500 KB a league and more than the UI reads. The team
- * builder shows a pick's best and worst matchups, so ship those plus a mean,
- * and leave the full matrix in the engine for team-level analysis to pick up
- * when it needs it.
+ * picks. A pick's panel only ever shows its best and worst few, so the summary
+ * carries those plus a mean and stays small enough to load with the page.
+ * The full matrix ships beside it in `matchups.<league>.rows.json`, which the
+ * team builder fetches only once there is a team to analyse: 182 KB gzipped
+ * against the summary's 82 KB, and nobody browsing the roster pays for it.
  */
 const KEPT_MATCHUPS = 6;
 
-function trimMatchups(league) {
+function readMatchupFile(league) {
   const path = join(ENGINE_DATA, `matchups.${league}.json`);
   if (!existsSync(path)) {
     throw new Error(
@@ -67,8 +68,26 @@ function trimMatchups(league) {
         `  cd pypogo && python3 pypogo/scripts/build_matchups.py --league ${league}`
     );
   }
-  const raw = JSON.parse(readFileSync(path, "utf8"));
+  return JSON.parse(readFileSync(path, "utf8"));
+}
 
+/**
+ * Every species' full row, for team-level coverage analysis.
+ *
+ * `meta` repeats the column order the ratings are indexed by. The two files
+ * are written together from one engine file so they cannot disagree, and
+ * carrying the ids means the browser can tell if they ever do rather than
+ * lining up a row against the wrong opponent.
+ */
+function matchupRows(raw) {
+  return {
+    league: raw.league,
+    meta: raw.meta.map(({ id }) => id),
+    ratings: raw.ratings,
+  };
+}
+
+function trimMatchups(raw) {
   const best = {};
   const worst = {};
   const score = {};
@@ -212,10 +231,20 @@ const kb = (name) =>
   Math.round(readFileSync(join(OUT_DIR, name), "utf8").length / 1024);
 
 const matchupSummary = LEAGUES.map((league) => {
-  const trimmed = trimMatchups(league);
+  const raw = readMatchupFile(league);
+
+  const trimmed = trimMatchups(raw);
   const name = `matchups.${league}.json`;
   writeFileSync(join(OUT_DIR, name), JSON.stringify(trimmed));
-  return `${name}  ${trimmed.meta.length} meta, ${Object.keys(trimmed.best).length} species (${kb(name)} KB)`;
+
+  const rows = matchupRows(raw);
+  const rowsName = `matchups.${league}.rows.json`;
+  writeFileSync(join(OUT_DIR, rowsName), JSON.stringify(rows));
+
+  return (
+    `${name}  ${trimmed.meta.length} meta, ${Object.keys(trimmed.best).length} species (${kb(name)} KB)\n` +
+    `${rowsName}  ${Object.keys(rows.ratings).length} full rows (${kb(rowsName)} KB)`
+  );
 }).join("\n");
 
 console.log(
