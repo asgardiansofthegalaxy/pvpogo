@@ -114,6 +114,37 @@ test.describe("team builder", () => {
     await expect(slot.getByText(/not the moves you picked/)).toHaveCount(1);
   });
 
+  test("finds the best IV spread for the league", async ({ page }) => {
+    await page.getByPlaceholder("Search Pokémon...").fill("registeel");
+    await page.getByRole("button", { name: /Add Registeel/ }).click();
+
+    const team = page.getByRole("region", { name: "Your team" });
+    const slot = team.getByRole("listitem").filter({ hasText: "Registeel" }).first();
+    const optimise = slot.getByRole("button", {
+      name: /Set Registeel to the best IVs/,
+    });
+
+    // The default 0/15/15 is a good spread but not the best one under 1500.
+    await expect(slot).toContainText(/Rank #\d+ of 4,096/);
+    await expect(slot).not.toContainText("Rank #1 of 4,096");
+
+    await optimise.click();
+
+    // Rank 1 by construction, and the button retires rather than sitting there
+    // as a no-op.
+    await expect(slot).toContainText("Rank #1 of 4,096");
+    await expect(optimise).toBeDisabled();
+
+    // Under a CP cap the best spread is a lower attack IV levelled higher, so
+    // the optimiser has to actually move the boxes, not just relabel itself.
+    const defIv = slot.getByRole("spinbutton").nth(1);
+    await expect(defIv).not.toHaveValue("15");
+
+    // And the ratings underneath were simulated at the spread it just left, so
+    // the panel has to say they no longer describe this Pokemon.
+    await expect(slot.getByText(/not your spread/)).toBeVisible();
+  });
+
   test("removes a Pokemon", async ({ page }) => {
     await page.getByPlaceholder("Search Pokémon...").fill("azumarill");
     await page.getByRole("button", { name: /Add Azumarill/ }).click();

@@ -210,6 +210,20 @@ website needs the same answer: it orders every exported move pool by the ranking
 `fastMoves[0]` is the move the engine would have built with. Ranking the whole dataset is arithmetic
 and costs under a second, so unlike the matchup matrices the drift check runs in the gate.
 
+### IV optimisation
+
+`app/lib/ivs.ts` ranks all 4,096 IV spreads at their best level under a cap -- ~30ms, so it runs on
+demand in the browser rather than shipping as another precomputed file. It ranks by **stat product**,
+matching `meta.py::stat_product` and the figure the team slot displays. `StatsRanker.get_iv_rankings`
+in the engine ranks by the *sum* of effective stats instead; the two mostly agree at the optimum
+(Registeel is the widest gap measured, 4 stat product in 2,405) but product is the measure the rest
+of the project uses, so the web optimiser is not a port of that method.
+
+The matrix is simulated at one spread -- `assumptions.ivs`, which is also the builder's default -- so
+optimising IVs makes a pick better than the one its ratings describe. `spreadMatches` is what keeps
+the panel honest about that; do not add anything that changes a pick's spread without going through
+it.
+
 ### AI layer — the extension point
 
 `AInterface` (`ai/interface.py`) is the ABC every AI implements: `select_team`, `decide_action`,

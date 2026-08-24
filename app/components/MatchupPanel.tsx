@@ -4,10 +4,16 @@ import {
   buildMatches,
   describeRating,
   speciesName,
+  spreadMatches,
   type Matchup,
   type SpeciesMatchups,
 } from "@/app/lib/matchups";
-import { titleCase, type MoveTable, type Species } from "@/app/lib/pokemon";
+import {
+  titleCase,
+  type MoveTable,
+  type Species,
+  type Stats,
+} from "@/app/lib/pokemon";
 
 interface Props {
   matchups: SpeciesMatchups;
@@ -15,6 +21,8 @@ interface Props {
   moves: MoveTable;
   fastMoveId: string;
   chargedMoveIds: string[];
+  ivs: Stats;
+  level: number;
   /** How many of each side to show. The data file carries six. */
   limit?: number;
 }
@@ -33,10 +41,13 @@ export default function MatchupPanel({
   moves,
   fastMoveId,
   chargedMoveIds,
+  ivs,
+  level,
   limit = 3,
 }: Props) {
-  const { build, score, best, worst } = matchups;
-  const matchesUserBuild = buildMatches(build, fastMoveId, chargedMoveIds);
+  const { build, score, best, worst, assumedIvs } = matchups;
+  const matchesMoves = buildMatches(build, fastMoveId, chargedMoveIds);
+  const matchesSpread = spreadMatches(build, assumedIvs, ivs, level);
 
   return (
     <section className="mt-4 border-t border-teal-400/10 pt-3">
@@ -72,15 +83,30 @@ export default function MatchupPanel({
         />
       </div>
 
-      {!matchesUserBuild && build && (
-        <p className="mt-2.5 rounded-lg bg-amber-400/10 px-2.5 py-1.5 text-[0.65rem] leading-relaxed text-amber-200/90">
-          Simulated with{" "}
-          <span className="font-medium">{moveLabel(moves, build.fast)}</span> and{" "}
-          <span className="font-medium">
-            {build.charged.map((id) => moveLabel(moves, id)).join(" + ")}
-          </span>
-          , not the moves you picked.
-        </p>
+      {build && !(matchesMoves && matchesSpread) && (
+        <div className="mt-2.5 space-y-1 rounded-lg bg-amber-400/10 px-2.5 py-1.5 text-[0.65rem] leading-relaxed text-amber-200/90">
+          {!matchesMoves && (
+            <p>
+              Simulated with{" "}
+              <span className="font-medium">{moveLabel(moves, build.fast)}</span>{" "}
+              and{" "}
+              <span className="font-medium">
+                {build.charged.map((id) => moveLabel(moves, id)).join(" + ")}
+              </span>
+              , not the moves you picked.
+            </p>
+          )}
+          {!matchesSpread && (
+            <p>
+              Simulated at{" "}
+              <span className="font-medium">
+                {assumedIvs.atk}/{assumedIvs.def}/{assumedIvs.sta}
+              </span>
+              , level <span className="font-medium">{build.level}</span> — not
+              your spread.
+            </p>
+          )}
+        </div>
       )}
     </section>
   );

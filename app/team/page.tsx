@@ -245,6 +245,7 @@ export default function TeamBuilder() {
                     moves={data.moves}
                     cpMultipliers={data.cpMultipliers}
                     cap={cap}
+                    leagueName={LEAGUES[league].short}
                     speciesById={speciesById}
                     matchups={
                       matchups && member

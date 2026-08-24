@@ -11,7 +11,7 @@
  * dealt, half is HP retained, averaged over all nine shield combinations.
  */
 
-import type { LeagueKey, Species } from "@/app/lib/pokemon";
+import type { LeagueKey, Species, Stats } from "@/app/lib/pokemon";
 
 /** The rating an even matchup produces: half the damage, half the HP. */
 export const EVEN_RATING = 500;
@@ -62,6 +62,8 @@ export interface SpeciesMatchups {
   /** The id the ratings were actually computed for, after alias resolution. */
   ratedAs: string;
   build: SimulatedBuild | null;
+  /** The IV spread every rating in the file was simulated at. */
+  assumedIvs: Stats;
   score: number;
   best: Matchup[];
   worst: Matchup[];
@@ -156,18 +158,25 @@ export function matchupsFor(
   return {
     ratedAs: id,
     build: buildFor(data, id),
+    assumedIvs: assumedIvs(data),
     score: data.score[id] ?? 0,
     best: hydrate(data, data.best[id]),
     worst: hydrate(data, data.worst[id]),
   };
 }
 
+/** The IV spread a league's ratings were simulated at, in the UI's shape. */
+export function assumedIvs(data: MatchupData): Stats {
+  const { attack, defense, stamina } = data.assumptions.ivs;
+  return { atk: attack, def: defense, sta: stamina };
+}
+
 /**
- * Whether a user's build differs from the one the ratings were simulated with.
+ * Whether a user's moveset differs from the one the ratings were simulated with.
  *
- * The matrix fixes a moveset and level per species, so a pick the user has
- * re-specced is not the Pokemon these numbers describe. Saying so is cheaper
- * than pretending otherwise.
+ * The matrix fixes a moveset per species, so a pick the user has re-specced is
+ * not the Pokemon these numbers describe. Saying so is cheaper than pretending
+ * otherwise.
  */
 export function buildMatches(
   build: SimulatedBuild | null,
@@ -178,6 +187,29 @@ export function buildMatches(
   const chosen = [...chargedMoveIds].sort().join(",");
   const simulated = [...build.charged].sort().join(",");
   return build.fast === fastMoveId && chosen === simulated;
+}
+
+/**
+ * Whether a user's IVs and level match what was simulated.
+ *
+ * The whole matrix runs on one spread at the highest level under the cap, so
+ * the IV optimiser can hand the user a strictly better Pokemon than the one
+ * these ratings describe. That is worth saying out loud rather than leaving a
+ * button that quietly invalidates the numbers beside it.
+ */
+export function spreadMatches(
+  build: SimulatedBuild | null,
+  simulatedIvs: Stats,
+  ivs: Stats,
+  level: number
+): boolean {
+  if (!build) return true;
+  return (
+    ivs.atk === simulatedIvs.atk &&
+    ivs.def === simulatedIvs.def &&
+    ivs.sta === simulatedIvs.sta &&
+    level === build.level
+  );
 }
 
 /** A meta pick, and the best answer the team has to it. */

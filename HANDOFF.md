@@ -1,6 +1,6 @@
 # Handoff
 
-State as of the team-coverage work on branch `carlos/dev`. `main` is untouched
+State as of the IV-optimiser work on branch `carlos/dev`. `main` is untouched
 at `3a4fe98`.
 
 ## Get running
@@ -15,7 +15,7 @@ npm run verify:all    # the above + production build + Playwright  (~75s)
 npm run dev
 ```
 
-Green baseline: **142 Python tests, 17 Playwright tests, ruff/mypy/tsc/eslint
+Green baseline: **142 Python tests, 18 Playwright tests, ruff/mypy/tsc/eslint
 clean.** If any of that is red on arrival, fix it before starting new work --
 the gate is only useful while it is trusted.
 
@@ -37,7 +37,31 @@ loads data or renders a species.
 
 ## Recent changes
 
-### This session: team coverage
+### This session: the IV optimiser
+
+`app/lib/ivs.ts` ranks all 4,096 spreads at their best level under the cap and
+the team slot gained a "Best IVs" button plus a live `Rank #N of 4,096` line.
+The rank is what makes the button worth pressing rather than magic: it says how
+much is on the table before, and confirms the result after. All 4,096 spreads
+cost ~30ms, so it runs on click; it is memoised per species and cap, keyed on
+the stats object rather than on `member`, which is a fresh object on every edit.
+
+**It does not port `StatsRanker.get_iv_rankings`.** That ranks by the *sum* of
+effective stats; `meta.py` and the UI both use stat *product*, which is the PvP
+measure and the reason low-attack spreads win under a cap. The two mostly agree
+at the optimum -- Registeel is the widest gap of those measured, 4 stat product
+in 2,405 -- so this is a correctness nit rather than a live bug, but the engine
+method is the one that is out of step.
+
+The feature exposed a coherence problem worth knowing about: the matrix is
+simulated at one spread (`assumptions.ivs`, 0/15/15, which is also the
+builder's default), so optimising IVs hands the user a strictly better Pokémon
+than the one the ratings beside it describe. `spreadMatches` now covers IVs and
+level the way `buildMatches` covers moves, and the panel says "Simulated at
+0/15/15, level 23.5 — not your spread." Anything that changes a pick's spread
+needs to go through it.
+
+### Before that: team coverage
 
 The per-pick panel said how one Pokémon fares. The team-level question -- which
 meta picks beat *all* of your picks -- is now answered too, as a scan down each
@@ -67,7 +91,7 @@ Two judgement calls worth knowing:
 Sanity numbers on Great League: Azumarill / Registeel / Medicham answers 96 of
 100; a single Azumarill answers 69; three worthless picks answer 0.
 
-### Before that: the builder's defaults
+### And before that: the builder's defaults
 
 The team builder used to hand every fresh pick `species.fastMoves[0]` -- export
 order, which is not a ranking -- so it built the Rock Smash Azumarill the
@@ -96,7 +120,7 @@ the battle-usable ones, so the picker offered them and picking one produced a
 slot with no fast move at all. The check now uses the ranking's coverage, which
 is exactly the set the engine accepts -- hence 1270 species, not 1279.
 
-### And before that: the matchup matrix
+### Earlier still: the matchup matrix
 
 The website can now answer "how does this pick fare against what it will face",
 which is the question a team builder exists for. It does that with **no server**:
@@ -130,13 +154,7 @@ or Flutter Mane raised `IndexError`. It now returns "not a legal action".
 
 ## Next actions, in order
 
-### 1. IV optimiser
-
-`StatsRanker.get_iv_rankings` exists in Python and is unreachable from the web.
-For one species under a CP cap this is ~4096 combinations x ~100 levels, fast
-enough client-side. Give the builder a "best IVs for this league" action.
-
-### 2. A fitness function for the AI, then the strategy state machine
+### 1. A fitness function for the AI, then the strategy state machine
 
 Unchanged from before, and still the prerequisite for any AI tuning. The
 matchup matrix is now a plausible basis for the benchmark: a fixed set of
@@ -185,6 +203,10 @@ matchups with known expected outcomes.
   placeholder view and duplicated models. Nothing depends on it.
 - **`public/data/` is generated, not committed.** `predev`/`prebuild` rebuild it
   from the engine dataset, `movesets.json` and the matchup files.
+- **`StatsRanker` ranks IVs by stat sum, the rest of the project by stat
+  product.** Nothing depends on `get_iv_rankings` today, so it is inert rather
+  than wrong-in-production, but do not reach for it as the reference: the web
+  optimiser in `app/lib/ivs.ts` and `meta.py::stat_product` are the measure.
 - **Coverage is 1v1, not 3v3.** It answers "does anything on this team beat
   that", which is the question worth asking while picking. It knows nothing
   about switching, shield pressure across a match, or lead advantage. The panel

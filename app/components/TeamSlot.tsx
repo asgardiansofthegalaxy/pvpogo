@@ -1,11 +1,18 @@
 "use client";
 
+import { useMemo } from "react";
 import { Select, SelectItem, Slider } from "@heroui/react";
 
 import MatchupPanel from "@/app/components/MatchupPanel";
 import SpeciesAvatar from "@/app/components/SpeciesAvatar";
 import { BoltIcon, CloseIcon, ShieldIcon } from "@/app/components/Icon";
 import type { SpeciesMatchups } from "@/app/lib/matchups";
+import {
+  rankIvs,
+  spreadKey,
+  type IvRanking,
+  type RankedSpread,
+} from "@/app/lib/ivs";
 import { typeChipClass } from "@/app/lib/types";
 import {
   MAX_IV,
@@ -34,6 +41,8 @@ interface Props {
   moves: MoveTable;
   cpMultipliers: number[];
   cap: number;
+  /** Short league name, for labelling the IV optimiser. */
+  leagueName: string;
   speciesById: Map<string, Species>;
   /** Precomputed ratings for this pick, or null while the league file loads. */
   matchups: SpeciesMatchups | null;
@@ -47,11 +56,24 @@ export default function TeamSlot({
   moves,
   cpMultipliers,
   cap,
+  leagueName,
   speciesById,
   matchups,
   onChange,
   onRemove,
 }: Props) {
+  // ~30ms for all 4,096 spreads, so it is worth doing once per species and cap
+  // rather than on every keystroke in the IV boxes. Depending on the stats
+  // object rather than on `member` is what keeps it that way: species objects
+  // come straight from the loaded dataset and are never rebuilt, while `member`
+  // is a fresh object on every edit. The hook runs before the empty-slot return
+  // so the hook order stays stable as a slot fills up.
+  const baseStats = member?.species.stats;
+  const ivRanking = useMemo(
+    () => (baseStats ? rankIvs(baseStats, cap, cpMultipliers) : null),
+    [baseStats, cap, cpMultipliers]
+  );
+
   if (!member) {
     return (
       <li className="flex min-h-[5.5rem] items-center gap-3 rounded-2xl border border-dashed border-teal-400/25 px-4 py-5">
@@ -197,6 +219,18 @@ export default function TeamSlot({
           ))}
         </div>
 
+        {ivRanking && ivRanking.spreads.length > 0 && (
+          <IvOptimiser
+            ranking={ivRanking}
+            ivs={ivs}
+            leagueName={leagueName}
+            speciesName={species.name}
+            onApply={(spread) =>
+              onChange({ ...member, ivs: spread.ivs, level: spread.level })
+            }
+          />
+        )}
+
         <dl className="flex justify-between rounded-lg bg-teal-400/5 px-3 py-2 text-xs">
           <Stat label="Attack" value={effective.atk.toFixed(1)} />
           <Stat label="Defense" value={effective.def.toFixed(1)} />
@@ -212,9 +246,71 @@ export default function TeamSlot({
           moves={moves}
           fastMoveId={member.fastMoveId}
           chargedMoveIds={member.chargedMoveIds}
+          ivs={ivs}
+          level={level}
         />
       )}
     </li>
+  );
+}
+
+/**
+ * Where this spread ranks under the cap, and a way to jump to the best one.
+ *
+ * The rank is what makes the button worth pressing rather than magic: it says
+ * how much is on the table before you press it, and confirms the result after.
+ */
+function IvOptimiser({
+  ranking,
+  ivs,
+  leagueName,
+  speciesName,
+  onApply,
+}: {
+  ranking: IvRanking;
+  ivs: Stats;
+  leagueName: string;
+  speciesName: string;
+  onApply: (spread: RankedSpread) => void;
+}) {
+  const best = ranking.spreads[0];
+  const rank = ranking.ranks.get(spreadKey(ivs));
+  const total = ranking.spreads.length;
+  const isBest = rank === 1;
+
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-lg bg-teal-400/5 px-3 py-2">
+      <p className="min-w-0 text-[0.65rem] leading-tight text-teal-300/80">
+        {rank === undefined ? (
+          <span className="text-amber-200/90">
+            This spread is over the {leagueName} cap at every level.
+          </span>
+        ) : (
+          <>
+            Rank{" "}
+            <span
+              className={`font-semibold tabular-nums ${
+                isBest ? "text-emerald-300" : "text-teal-100"
+              }`}
+            >
+              #{rank.toLocaleString()}
+            </span>{" "}
+            of {total.toLocaleString()} for {leagueName}
+          </>
+        )}
+      </p>
+
+      <button
+        type="button"
+        disabled={isBest}
+        onClick={() => onApply(best)}
+        aria-label={`Set ${speciesName} to the best IVs for ${leagueName}`}
+        title={`${best.ivs.atk}/${best.ivs.def}/${best.ivs.sta} at level ${best.level} — ${best.cp} CP`}
+        className="shrink-0 rounded-lg bg-teal-400/15 px-2.5 py-1.5 text-[0.65rem] font-semibold text-teal-100 transition-colors hover:bg-teal-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 disabled:cursor-default disabled:bg-transparent disabled:text-emerald-300/70"
+      >
+        {isBest ? "Best spread" : "Best IVs"}
+      </button>
+    </div>
   );
 }
 
